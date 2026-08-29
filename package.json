@@ -1,49 +1,22 @@
 {
-  "name": "codex-diagnose-safe",
-  "version": "1.0.1",
-  "private": true,
-  "description": "Safe CI/build/test failure root-cause diagnosis for local logs and GitLab Self-Managed pipelines",
-  "license": "MIT",
-  "type": "commonjs",
-  "bin": {
-    "codex-diagnose": "src/cli.js"
+  "name":"codex-diagnose-safe",
+  "version":"1.0.1",
+  "private":true,
+  "description":"Safe CI/build/test failure root-cause diagnosis for local logs and GitLab Self-Managed pipelines",
+  "license":"MIT",
+  "type":"commonjs",
+  "bin":{"codex-diagnose":"src/cli.js"},
+  "engines":{"node":">=22.22.2 <23 || >=24.19.0 <25"},
+  "files":["README.md","README.zh-CN.md","LICENSE","SECURITY.md","ARCHITECTURE.md","VERIFY_RELEASE.md","product-contract.json","src/*.js","src/codex-safe-core/index.js","src/codex-safe-core/safe-contract.js","src/codex-safe-core/codex-runtime.js","src/codex-safe-core/codex-cli.js","src/codex-safe-core/process-runner.js","src/codex-safe-core/efficiency-planner.js","src/codex-safe-core/diagnosis-platform.js","src/codex-safe-core/core-contract.json","src/codex-safe-core/family-non-goals.json","src/codex-safe-core/family-error-taxonomy.json","src/codex-safe-core/scripts/family-diagnostics.js"],
+  "scripts":{
+    "core:init":"git submodule update --init --recursive",
+    "precheck":"npm run core:init",
+    "pretest":"npm run core:init",
+    "check":"node --check src/args.js && node --check src/gitlab.js && node --check src/notify.js && node --check src/codex.js && node --check src/diagnose.js && node --check src/cli.js && node --check scripts/verify-manifest.js && node scripts/verify-manifest.js && npm run governance",
+    "test":"node --test test/*.test.js",
+    "governance":"node src/codex-safe-core/scripts/verify-actions-pins.js .github/workflows && node src/codex-safe-core/scripts/verify-non-goals.js .",
+    "diagnostics":"node src/codex-safe-core/scripts/family-diagnostics.js",
+    "ci":"npm run check && npm test && npm pack --dry-run --ignore-scripts"
   },
-  "engines": {
-    "node": ">=22.22.2 <23 || >=24.19.0 <25"
-  },
-  "files": [
-    "README.md",
-    "README.zh-CN.md",
-    "LICENSE",
-    "SECURITY.md",
-    "ARCHITECTURE.md",
-    "VERIFY_RELEASE.md",
-    "product-contract.json",
-    "src/*.js",
-    "src/codex-safe-core/index.js",
-    "src/codex-safe-core/safe-contract.js",
-    "src/codex-safe-core/codex-runtime.js",
-    "src/codex-safe-core/codex-cli.js",
-    "src/codex-safe-core/process-runner.js",
-    "src/codex-safe-core/efficiency-planner.js",
-    "src/codex-safe-core/diagnosis-platform.js",
-    "src/codex-safe-core/core-contract.json",
-    "src/codex-safe-core/family-non-goals.json",
-    "src/codex-safe-core/family-error-taxonomy.json",
-    "src/codex-safe-core/scripts/family-diagnostics.js"
-  ],
-  "scripts": {
-    "core:init": "git submodule update --init --recursive",
-    "precheck": "npm run core:init",
-    "pretest": "npm run core:init",
-    "check": "node --check src/args.js && node --check src/gitlab.js && node --check src/notify.js && node --check src/codex.js && node --check src/diagnose.js && node --check src/cli.js && node --check scripts/verify-manifest.js && node scripts/verify-manifest.js && npm run governance",
-    "test": "node --test test/*.test.js",
-    "governance": "node src/codex-safe-core/scripts/verify-actions-pins.js .github/workflows && node src/codex-safe-core/scripts/verify-non-goals.js .",
-    "diagnostics": "node src/codex-safe-core/scripts/family-diagnostics.js",
-    "ci": "npm run check && npm test && npm pack --dry-run --ignore-scripts"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/jiying2007/codex-diagnose.git"
-  }
+  "repository":{"type":"git","url":"https://github.com/jiying2007/codex-diagnose.git"}
 }
