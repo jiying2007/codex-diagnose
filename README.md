@@ -11,7 +11,7 @@ It is not a CI runner, retry bot, code fixer, PR/MR description generator, or re
 `product-contract.json` is the machine-checked identity for v1.0.0:
 
 - Diagnose: **1.0.0**
-- Safe Core: exact commit `e75d27d5f157cacc5e8f6b711355dd5cf4ddfe34` / v4.8.0
+- Safe Core: exact commit `b71e11ef3eafba5aa4359376c79a792a05ee85eb` / v4.8.0
 - Safe Contract: **v2**
 - Diagnose Prompt Contract: **v1**
 - Diagnosis Contract: **v1**
