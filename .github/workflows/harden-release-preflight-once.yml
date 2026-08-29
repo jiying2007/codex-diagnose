@@ -23,8 +23,15 @@ jobs:
           from pathlib import Path
           p = Path('.github/workflows/release.yml')
           s = p.read_text()
-          old_env = '''        env:\n          GITHUB_EVENT_BEFORE: ${{ github.event.before }}\n'''
-          new_env = '''        env:\n          GITHUB_EVENT_BEFORE: ${{ github.event.before }}\n          GH_TOKEN: ${{ github.token }}\n          IMMUTABILITY_MARKER_TAG: governance-release-immutability-v1\n'''
+          before_expr = '$' + '{{ github.event.before }}'
+          token_expr = '$' + '{{ github.token }}'
+          old_env = '        env:\n          GITHUB_EVENT_BEFORE: ' + before_expr + '\n'
+          new_env = (
+              '        env:\n'
+              '          GITHUB_EVENT_BEFORE: ' + before_expr + '\n'
+              '          GH_TOKEN: ' + token_expr + '\n'
+              '          IMMUTABILITY_MARKER_TAG: governance-release-immutability-v1\n'
+          )
           if old_env not in s:
               raise SystemExit('expected release env block not found')
           s = s.replace(old_env, new_env, 1)
