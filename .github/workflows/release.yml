@@ -32,6 +32,8 @@ jobs:
       - id: version
         env:
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
+          IMMUTABILITY_MARKER_TAG: governance-release-immutability-v1
         shell: bash
         run: |
           set -euo pipefail
@@ -43,6 +45,12 @@ jobs:
           publish=true
           if git ls-remote --exit-code --refs origin "refs/tags/${tag}" >/dev/null 2>&1; then
             publish=false
+          else
+            marker_immutable=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${IMMUTABILITY_MARKER_TAG}" --jq '.immutable' 2>/dev/null || true)
+            test "$marker_immutable" = true || {
+              echo "Immutable-release governance marker ${IMMUTABILITY_MARKER_TAG} is missing or not immutable; refusing to create ${tag}." >&2
+              exit 1
+            }
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
