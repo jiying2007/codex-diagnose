@@ -8,9 +8,9 @@ It is not a CI runner, retry bot, code fixer, PR/MR description generator, or re
 
 ## Product contract
 
-`product-contract.json` is the machine-checked identity for v1.0.0:
+`product-contract.json` is the machine-checked identity for v1.0.1:
 
-- Diagnose: **1.0.0**
+- Diagnose: **1.0.1**
 - Safe Core: exact commit `e75d27d5f157cacc5e8f6b711355dd5cf4ddfe34` / v4.8.0
 - Safe Contract: **v2**
 - Diagnose Prompt Contract: **v1**
