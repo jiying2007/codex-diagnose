@@ -1,0 +1,45 @@
+name: Prepare Diagnose v1.1.0 Quality Cutover
+on:
+  push:
+    branches: [quality-v1.1.0]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true
+          fetch-depth: 2
+          submodules: recursive
+      - uses: actions/setup-node@e51e5fe84fc33b4c73ebe40526b2694712b5b858
+        with:
+          node-version: '22.22.2'
+      - name: Prepare v1.1.0
+        env:
+          CORE_SHA: 10393a0035ce5168b3d0e88822af0d74fe85ec6c
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C src/codex-safe-core fetch --quiet origin "$CORE_SHA"
+          git -C src/codex-safe-core checkout --quiet --detach "$CORE_SHA"
+          git add src/codex-safe-core
+          npm version 1.1.0 --no-git-tag-version --ignore-scripts
+          node <<'NODE'
+          const fs=require('fs');const core=require('./src/codex-safe-core/core-contract.json');const coreSha=process.env.CORE_SHA;const pkg=require('./package.json');
+          const c=require('./product-contract.json');Object.assign(c,{productContractVersion:core.productContractVersion,productId:'codex-diagnose',productVersion:pkg.version,diagnoseVersion:pkg.version,safeCoreVersion:core.coreVersion,safeCoreCommit:coreSha,safeCoreMajorVersion:core.safeCoreMajorVersion,safeContractVersion:core.safeContractVersion,policySchemaVersion:core.policySchemaVersion,minimumNodeVersion:core.minimumNodeVersion,canonicalNodeVersion:core.canonicalNodeVersion,supportedNodeMajors:core.supportedNodeMajors,diagnosePromptContractVersion:core.diagnosePromptContractVersion,diagnosisContractVersion:core.diagnosisContractVersion,diagnosisReceiptVersion:core.diagnosisReceiptVersion,qualityPlatformVersion:core.qualityPlatformVersion});fs.writeFileSync('product-contract.json',JSON.stringify(c,null,2)+'\n');
+          let p=fs.readFileSync('package.json','utf8');p=p.replace('node --check src/notify.js && node --check src/codex.js && node --check src/diagnose.js', 'node --check src/notify.js && node --check src/codex.js && node --check src/causal-ranking.js && node --check src/diagnose.js');fs.writeFileSync('package.json',p);
+          let v=fs.readFileSync('scripts/verify-manifest.js','utf8');v=v.replace("assert.equal(pkg.version,contract.diagnoseVersion);", "require('../src/codex-safe-core/scripts/verify-consumer-product-contract').verify(root,contract.safeCoreCommit,'codex-diagnose');\nassert.equal(contract.productVersion,contract.diagnoseVersion);\nassert.equal(pkg.version,contract.diagnoseVersion);");v=v.replace("'Diagnose 1.0 must have zero runtime dependencies'", "'Diagnose must have zero runtime dependencies'");fs.writeFileSync('scripts/verify-manifest.js',v);
+          const docs=['README.md','README.zh-CN.md','ARCHITECTURE.md','SECURITY.md','VERIFY_RELEASE.md'];for(const file of docs){let s=fs.readFileSync(file,'utf8');s=s.replaceAll('d06383ecf58b8153ddbd9d0b26a4f83b6e0515c2',coreSha).replaceAll('v1.0.1','v1.1.0').replaceAll('**1.0.1**','**1.1.0**').replaceAll('1.0.1','1.1.0');fs.writeFileSync(file,s);}
+          let r=fs.readFileSync('README.md','utf8');if(!r.includes('## Causal failure ranking'))r=r.replace('## CI artifact evidence','## Causal failure ranking\n\nPipeline mode deterministically ranks failed jobs before the single Codex call using stage/start order, Core failure classification and normalized first-error signatures. Exact duplicate signatures are marked as cascade evidence (`duplicateOf`) and moved behind independent root candidates. The product does not invent a GitLab `needs` DAG when the API does not prove one, and no failed job is silently discarded.\n\n## CI artifact evidence');fs.writeFileSync('README.md',r);
+          let rz=fs.readFileSync('README.zh-CN.md','utf8');if(!rz.includes('## 失败因果排序'))rz=rz.replace('## CI Artifact 证据','## 失败因果排序\n\nPipeline 模式会在唯一一次 Codex 调用前，依据 stage/started 顺序、Core 确定性失败分类和归一化首个错误 signature 对失败 Job 排序。只有 signature 精确重复的 Job 才标记为 cascade (`duplicateOf`) 并排在独立根因候选之后；当 GitLab API 没有证明完整 `needs` DAG 时不会自行猜测依赖关系，也不会静默丢弃任何失败 Job。\n\n## CI Artifact 证据');fs.writeFileSync('README.zh-CN.md',rz);
+          let a=fs.readFileSync('ARCHITECTURE.md','utf8');if(!a.includes('causal ranking'))a+='\n## Deterministic causal ranking\n\nMulti-job pipeline diagnosis ranks evidence using only provider-proven metadata and normalized error signatures. Duplicate signatures may be marked as cascade evidence; no unproven dependency edge is invented. The ranking remains read-only and feeds the existing single bounded Codex diagnosis.\n';fs.writeFileSync('ARCHITECTURE.md',a);
+          NODE
+          npm run ci
+          git add package.json package-lock.json product-contract.json README.md README.zh-CN.md ARCHITECTURE.md SECURITY.md VERIFY_RELEASE.md scripts/verify-manifest.js src/causal-ranking.js src/diagnose.js test/causal-ranking.test.js src/codex-safe-core
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'feat(diagnose): prepare v1.1.0 causal ranking on Core v4.9.0'
+          git push origin HEAD:quality-v1.1.0
