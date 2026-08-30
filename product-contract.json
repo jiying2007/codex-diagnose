@@ -1,7 +1,7 @@
 {
-  "diagnoseVersion": "1.0.1",
+  "diagnoseVersion": "1.1.0",
   "safeCoreMajorVersion": 4,
-  "safeCoreCommit": "d06383ecf58b8153ddbd9d0b26a4f83b6e0515c2",
+  "safeCoreCommit": "10393a0035ce5168b3d0e88822af0d74fe85ec6c",
   "safeContractVersion": 2,
   "diagnosePromptContractVersion": 1,
   "diagnosisContractVersion": 1,
@@ -12,5 +12,11 @@
     22,
     24
   ],
-  "gitLabMinimumVersion": "14.6.1"
+  "gitLabMinimumVersion": "14.6.1",
+  "productContractVersion": 1,
+  "productId": "codex-diagnose",
+  "productVersion": "1.1.0",
+  "safeCoreVersion": "4.9.0",
+  "policySchemaVersion": 3,
+  "qualityPlatformVersion": 3
 }

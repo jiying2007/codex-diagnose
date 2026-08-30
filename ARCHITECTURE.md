@@ -58,3 +58,7 @@ The initial product uses GitLab REST API v4 endpoints available across the decla
 ## Family ownership
 
 Safe Core owns generic diagnosis primitives. Codex Diagnose Safe owns `diagnose-domain` and `ci-failure-evidence-acquisition`. Review Service remains the owner of durable GitLab MR review operations and Analyzer Adapter Hub. No duplicate Review Service, notification outbox or database is introduced here.
+
+## Deterministic causal ranking
+
+Multi-job pipeline diagnosis ranks evidence using only provider-proven metadata and normalized error signatures. Duplicate signatures may be marked as cascade evidence; no unproven dependency edge is invented. The ranking remains read-only and feeds the existing single bounded Codex diagnosis.

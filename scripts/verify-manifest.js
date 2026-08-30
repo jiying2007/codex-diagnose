@@ -5,6 +5,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),pkg=require('../package.json'),lock=require('../package-lock.json'),contract=require('../product-contract.json'),core=require('../src/codex-safe-core');
+require('../src/codex-safe-core/scripts/verify-consumer-product-contract').verify(root,contract.safeCoreCommit,'codex-diagnose');
+assert.equal(contract.productVersion,contract.diagnoseVersion);
 assert.equal(pkg.version,contract.diagnoseVersion);
 assert.equal(lock.version,contract.diagnoseVersion);
 assert.equal(lock.packages[''].version,contract.diagnoseVersion);
@@ -17,7 +19,7 @@ assert.equal(core.CORE_CONTRACT.diagnosisContractVersion,contract.diagnosisContr
 assert.equal(core.CORE_CONTRACT.diagnosisReceiptVersion,contract.diagnosisReceiptVersion);
 const staged=execFileSync('git',['ls-files','--stage','src/codex-safe-core'],{cwd:root,encoding:'utf8'}).trim();assert.match(staged,new RegExp(`^160000 ${contract.safeCoreCommit} 0\\tsrc/codex-safe-core$`));
 const expected=['README.md','README.zh-CN.md','LICENSE','SECURITY.md','ARCHITECTURE.md','VERIFY_RELEASE.md','product-contract.json','src/*.js','src/codex-safe-core/index.js','src/codex-safe-core/safe-contract.js','src/codex-safe-core/codex-runtime.js','src/codex-safe-core/codex-cli.js','src/codex-safe-core/process-runner.js','src/codex-safe-core/efficiency-planner.js','src/codex-safe-core/diagnosis-platform.js','src/codex-safe-core/core-contract.json','src/codex-safe-core/family-non-goals.json','src/codex-safe-core/family-error-taxonomy.json','src/codex-safe-core/scripts/family-diagnostics.js'];assert.deepEqual(pkg.files,expected);
-assert.equal(Object.hasOwn(pkg,'dependencies'),false,'Diagnose 1.0 must have zero runtime dependencies');
+assert.equal(Object.hasOwn(pkg,'dependencies'),false,'Diagnose must have zero runtime dependencies');
 const gitlab=fs.readFileSync(path.join(root,'src/gitlab.js'),'utf8'),args=fs.readFileSync(path.join(root,'src/args.js'),'utf8'),notify=fs.readFileSync(path.join(root,'src/notify.js'),'utf8'),diagnose=fs.readFileSync(path.join(root,'src/diagnose.js'),'utf8');
 assert.doesNotMatch(gitlab,/\/retry\b|pipeline\/trigger|jobs\/\$\{[^}]+\}\/play/,'Diagnose must never retry/play/trigger CI jobs');
 assert.match(args,/publish:false/);assert.match(args,/notifyWebhookEnv:''/);assert.match(notify,/open\.feishu\.cn/);assert.match(notify,/qyapi\.weixin\.qq\.com/);assert.match(diagnose,/MAX_FAILED_JOBS=12/);assert.match(diagnose,/MAX_LOCAL_LOG_BYTES=32\*1024\*1024/);
