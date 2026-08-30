@@ -4,14 +4,14 @@
 
 Codex Diagnose Safe is the Codex Safe Family product for **bounded CI/build/test failure root-cause diagnosis**. It analyzes a local failure log or failed GitLab Self-Managed jobs, compacts noisy traces deterministically, performs at most one Codex diagnosis for one selected source, and emits a machine-verifiable **Diagnosis Receipt v1**.
 
-It is not a CI runner, retry bot, code fixer, PR/MR description generator, or replacement for GitLab pipelines.
+It is the Family post-failure root-cause product: Review Safe and Review Service find risks in code changes; Diagnose explains CI/build/test failures after they occur. It is not a CI runner, retry bot, code fixer, PR/MR description generator, or replacement for GitLab pipelines.
 
 ## Product contract
 
 `product-contract.json` is the machine-checked identity for v1.1.0:
 
 - Diagnose: **1.1.0**
-- Safe Core: exact commit `10393a0035ce5168b3d0e88822af0d74fe85ec6c` / v4.8.1
+- Safe Core: exact commit `f4544a302c5053cf0a41e30944933554825e8ecc` / v4.9.1
 - Safe Contract: **v2**
 - Diagnose Prompt Contract: **v1**
 - Diagnosis Contract: **v1**
