@@ -11,7 +11,7 @@ Codex Diagnose Safe 是 Codex Safe Family 中专门负责 **CI / Build / Test �
 `product-contract.json` 是 v1.1.1 当前产品身份的机器校验来源：
 
 - Diagnose：**1.1.1**
-- Safe Core：精确提交 `25ef338202fb9c6262b86e4af2e9ba3444fdc9df` / v4.9.5
+- Safe Core：精确提交 `43e818dc9ae91051f55374a9f9a47b9df6420cd6` / v4.9.5
 - Safe Contract：**v2**
 - Diagnose Prompt Contract：**v1**
 - Diagnosis Contract：**v1**
