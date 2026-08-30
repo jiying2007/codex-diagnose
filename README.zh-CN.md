@@ -4,14 +4,14 @@
 
 Codex Diagnose Safe 是 Codex Safe Family 中专门负责 **CI / Build / Test 失败根因诊断**的产品。它可以分析本地失败日志或 GitLab Self-Managed 的失败 Job/Pipeline，先确定性压缩噪声日志，再对一个选定失败源最多执行一次 Codex 诊断，并输出机器可验证的 **Diagnosis Receipt v1**。
 
-它不是 CI Runner、重试机器人、自动修复器、PR/MR 描述生成器，也不替代 GitLab Pipeline。
+它是产品族中“失败后的根因诊断”产品：Review Safe / Review Service 负责代码变更风险，Diagnose 负责解释已经发生的 CI/build/test 失败。它不是 CI Runner、重试机器人、自动修复器、PR/MR 描述生成器，也不替代 GitLab Pipeline。
 
 ## 产品契约
 
 `product-contract.json` 是 v1.1.0 当前产品身份的机器校验来源：
 
 - Diagnose：**1.1.0**
-- Safe Core：精确提交 `10393a0035ce5168b3d0e88822af0d74fe85ec6c` / v4.8.1
+- Safe Core：精确提交 `f4544a302c5053cf0a41e30944933554825e8ecc` / v4.9.1
 - Safe Contract：**v2**
 - Diagnose Prompt Contract：**v1**
 - Diagnosis Contract：**v1**
