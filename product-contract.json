@@ -1,7 +1,7 @@
 {
   "diagnoseVersion": "1.1.1",
   "safeCoreMajorVersion": 4,
-  "safeCoreCommit": "25ef338202fb9c6262b86e4af2e9ba3444fdc9df",
+  "safeCoreCommit": "43e818dc9ae91051f55374a9f9a47b9df6420cd6",
   "safeContractVersion": 2,
   "diagnosePromptContractVersion": 1,
   "diagnosisContractVersion": 1,
@@ -16,7 +16,7 @@
   "productContractVersion": 1,
   "productId": "codex-diagnose",
   "productVersion": "1.1.1",
-  "safeCoreVersion": "4.9.5",
+  "safeCoreVersion": "4.9.6",
   "policySchemaVersion": 3,
   "qualityPlatformVersion": 3
 }
