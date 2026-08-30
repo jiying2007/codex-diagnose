@@ -1,0 +1,49 @@
+name: Repin Diagnose Core v4.9.5 once
+on:
+  push:
+permissions:
+  contents: write
+jobs:
+  repin:
+    if: github.ref == 'refs/heads/repin-core-v4.9.5'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: repin-core-v4.9.5
+          persist-credentials: true
+          submodules: false
+      - name: Repin exact Core trust root and current docs
+        env:
+          OLD_SHA: bc367cf3fbc57d7060bce343fcf4a6d5312f7ab8
+          NEW_SHA: 25ef338202fb9c6262b86e4af2e9ba3444fdc9df
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs'), old=process.env.OLD_SHA, neu=process.env.NEW_SHA;
+          const pc=JSON.parse(fs.readFileSync('product-contract.json','utf8'));
+          pc.safeCoreVersion='4.9.5';
+          pc.safeCoreCommit=neu;
+          fs.writeFileSync('product-contract.json',JSON.stringify(pc,null,2)+'\n');
+          for (const p of ['README.md','README.zh-CN.md','SUPPORT.md','.codex-safe.example.json']) {
+            if (!fs.existsSync(p)) continue;
+            let s=fs.readFileSync(p,'utf8');
+            s=s.replaceAll(old,neu)
+               .replaceAll('v4.9.4','v4.9.5')
+               .replaceAll('v4.9.3','v4.9.5')
+               .replaceAll('Diagnose: **1.1.0**','Diagnose: **1.1.1**')
+               .replaceAll('诊断器：**1.1.0**','诊断器：**1.1.1**')
+               .replaceAll('Codex Diagnose Safe 1.1.0','Codex Diagnose Safe 1.1.1');
+            fs.writeFileSync(p,s);
+          }
+          NODE
+          git update-index --cacheinfo 160000,$NEW_SHA,src/codex-safe-core
+          git config user.name jiying2007
+          git config user.email 33591504+jiying2007@users.noreply.github.com
+          git add product-contract.json README.md README.zh-CN.md
+          test ! -f SUPPORT.md || git add SUPPORT.md
+          test ! -f .codex-safe.example.json || git add .codex-safe.example.json
+          git add -u src/codex-safe-core
+          git commit -m 'chore(family): pin Diagnose to Core v4.9.5 and refresh current identity'
+          git push origin HEAD:repin-core-v4.9.5
