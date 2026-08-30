@@ -1,0 +1,32 @@
+name: Prepare Diagnose v1.0.1 once
+on:
+  push:
+    branches: [release-v1.0.1-core-v4.8.1]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Prepare non-workflow maintenance patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          old='b71e11ef3eafba5aa4359376c79a792a05ee85eb'
+          new='d06383ecf58b8153ddbd9d0b26a4f83b6e0515c2'
+          sed -i 's/"version":"1\.0\.0"/"version":"1.0.1"/g' package.json package-lock.json
+          sed -i 's/"version": "1\.0\.0"/"version": "1.0.1"/g' package-lock.json
+          sed -i 's/"diagnoseVersion": "1\.0\.0"/"diagnoseVersion": "1.0.1"/g' product-contract.json
+          sed -i "s/${old}/${new}/g" product-contract.json README.md README.zh-CN.md
+          sed -i 's/v1\.0\.0/v1.0.1/g; s/\*\*1\.0\.0\*\*/**1.0.1**/g; s/v4\.8\.0/v4.8.1/g' README.md README.zh-CN.md
+          git update-index --add --cacheinfo 160000,${new},src/codex-safe-core
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json product-contract.json README.md README.zh-CN.md
+          git diff --cached --check
+          git commit -m 'chore(release): prepare Diagnose v1.0.1 on Core v4.8.1'
+          git push origin HEAD:release-v1.0.1-core-v4.8.1
