@@ -8,10 +8,10 @@ It is not a CI runner, retry bot, code fixer, PR/MR description generator, or re
 
 ## Product contract
 
-`product-contract.json` is the machine-checked identity for v1.0.1:
+`product-contract.json` is the machine-checked identity for v1.1.0:
 
-- Diagnose: **1.0.1**
-- Safe Core: exact commit `d06383ecf58b8153ddbd9d0b26a4f83b6e0515c2` / v4.8.1
+- Diagnose: **1.1.0**
+- Safe Core: exact commit `10393a0035ce5168b3d0e88822af0d74fe85ec6c` / v4.8.1
 - Safe Contract: **v2**
 - Diagnose Prompt Contract: **v1**
 - Diagnosis Contract: **v1**
@@ -95,6 +95,10 @@ codex-diagnose \
 Pipeline mode exhaustively enumerates the bounded job set, accepts only failed jobs, compacts all selected traces into one evidence set, and performs **one** Codex call. This avoids paying separately for downstream cascade failures.
 
 The hard product limit is 12 failed jobs per diagnosis. Exceeding the bound fails closed instead of silently claiming complete diagnosis.
+
+## Causal failure ranking
+
+Pipeline mode deterministically ranks failed jobs before the single Codex call using stage/start order, Core failure classification and normalized first-error signatures. Exact duplicate signatures are marked as cascade evidence (`duplicateOf`) and moved behind independent root candidates. The product does not invent a GitLab `needs` DAG when the API does not prove one, and no failed job is silently discarded.
 
 ## CI artifact evidence
 

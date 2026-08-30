@@ -8,10 +8,10 @@ Codex Diagnose Safe 是 Codex Safe Family 中专门负责 **CI / Build / Test �
 
 ## 产品契约
 
-`product-contract.json` 是 v1.0.1 当前产品身份的机器校验来源：
+`product-contract.json` 是 v1.1.0 当前产品身份的机器校验来源：
 
-- Diagnose：**1.0.1**
-- Safe Core：精确提交 `d06383ecf58b8153ddbd9d0b26a4f83b6e0515c2` / v4.8.1
+- Diagnose：**1.1.0**
+- Safe Core：精确提交 `10393a0035ce5168b3d0e88822af0d74fe85ec6c` / v4.8.1
 - Safe Contract：**v2**
 - Diagnose Prompt Contract：**v1**
 - Diagnosis Contract：**v1**
@@ -95,6 +95,10 @@ codex-diagnose \
 Pipeline 模式会完整枚举受限 Job 集合，只选择失败 Job，将多个失败 Trace 聚合为同一个 Evidence，再只执行**一次** Codex 调用，避免编译失败后下游多个 cascade failure 分别重复消耗 Token。
 
 单次诊断最多接受 12 个失败 Job；超过上限直接 fail closed，不会静默截断后声称已完整诊断。
+
+## 失败因果排序
+
+Pipeline 模式会在唯一一次 Codex 调用前，依据 stage/started 顺序、Core 确定性失败分类和归一化首个错误 signature 对失败 Job 排序。只有 signature 精确重复的 Job 才标记为 cascade (`duplicateOf`) 并排在独立根因候选之后；当 GitLab API 没有证明完整 `needs` DAG 时不会自行猜测依赖关系，也不会静默丢弃任何失败 Job。
 
 ## CI Artifact 证据
 
