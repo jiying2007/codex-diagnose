@@ -8,10 +8,10 @@ It is the Family post-failure root-cause product: Review Safe and Review Service
 
 ## Product contract
 
-`product-contract.json` is the machine-checked identity for v1.1.1:
+`product-contract.json` is the machine-checked identity for v1.1.3:
 
-- Diagnose: **1.1.1**
-- Safe Core: exact commit `43e818dc9ae91051f55374a9f9a47b9df6420cd6` / v4.9.5
+- Diagnose: **1.1.3**
+- Safe Core: exact commit `76418b80533c644e3ab01045290cd3cdd355622c` / v4.10.1
 - Safe Contract: **v2**
 - Diagnose Prompt Contract: **v1**
 - Diagnosis Contract: **v1**
@@ -203,11 +203,12 @@ The active product family is:
 Codex Safe Core
 ├── Codex Review Safe
 ├── Codex Commit Safe
+├── Codex Change Safe
 ├── Codex Review Service
 └── Codex Diagnose Safe
 ```
 
-Codex PR Safe remains retired. PR/MR creation and metadata belong to the SCM-native UI/CLI/API; no PR/MR narrative generator is added here.
+Codex PR Safe remains retired as the former model-generated narrative identity. Codex Change Safe is the active deterministic PR/MR delivery product; Diagnose remains focused only on bounded failure diagnosis and does not generate PR/MR narratives.
 
 ## License
 

@@ -8,10 +8,10 @@ Codex Diagnose Safe 是 Codex Safe Family 中专门负责 **CI / Build / Test �
 
 ## 产品契约
 
-`product-contract.json` 是 v1.1.1 当前产品身份的机器校验来源：
+`product-contract.json` 是 v1.1.3 当前产品身份的机器校验来源：
 
-- Diagnose：**1.1.1**
-- Safe Core：精确提交 `43e818dc9ae91051f55374a9f9a47b9df6420cd6` / v4.9.5
+- Diagnose：**1.1.3**
+- Safe Core：精确提交 `76418b80533c644e3ab01045290cd3cdd355622c` / v4.10.1
 - Safe Contract：**v2**
 - Diagnose Prompt Contract：**v1**
 - Diagnosis Contract：**v1**
@@ -203,11 +203,12 @@ Changed Paths / 可选 Artifact metadata
 Codex Safe Core
 ├── Codex Review Safe
 ├── Codex Commit Safe
+├── Codex Change Safe
 ├── Codex Review Service
 └── Codex Diagnose Safe
 ```
 
-Codex PR Safe 继续保持退役。PR/MR 创建和元数据由 SCM 原生 UI/CLI/API 负责，本产品不增加 PR/MR Narrative Generator。
+Codex PR Safe 作为旧的模型 PR/MR Narrative 身份继续保持退役。Codex Change Safe 是当前确定性的 PR/MR 交付产品；Diagnose 只负责受限失败诊断，不生成 PR/MR Narrative。
 
 ## License
 
