@@ -8,10 +8,10 @@ It is the Family post-failure root-cause product: Review Safe and Review Service
 
 ## Product contract
 
-`product-contract.json` is the machine-checked identity for v1.1.3:
+`product-contract.json` is the machine-checked identity for v1.1.4:
 
-- Diagnose: **1.1.3**
-- Safe Core: exact commit `76418b80533c644e3ab01045290cd3cdd355622c` / v4.10.1
+- Diagnose: **1.1.4**
+- Safe Core: exact commit `cd9788f1280a217fbe6d0beb59682a85a8b82c4d` / v4.10.2
 - Safe Contract: **v2**
 - Diagnose Prompt Contract: **v1**
 - Diagnosis Contract: **v1**
