@@ -1,0 +1,39 @@
+name: Family migration bootstrap
+on:
+  push:
+    branches: [family/judgment-lifecycle-v1]
+permissions:
+  contents: write
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: family/judgment-lifecycle-v1
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-node@e51e5fe84fc33b4c73ebe40526b2694712b5b858
+        with:
+          node-version: '22.22.2'
+      - name: Apply deterministic Diagnose 1.2.0 migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('node:fs');
+          const version='1.2.0',coreVersion='4.11.0',coreSha='8375907712db37492aff1ac0d0013e2753b1f6ab';
+          const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));pkg.version=version;fs.writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n');
+          const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));lock.version=version;if(lock.packages?.[''])lock.packages[''].version=version;fs.writeFileSync('package-lock.json',JSON.stringify(lock,null,2)+'\n');
+          const pc=JSON.parse(fs.readFileSync('product-contract.json','utf8'));Object.assign(pc,{diagnoseVersion:version,productVersion:version,safeCoreVersion:coreVersion,safeCoreCommit:coreSha,diagnosisReceiptVersion:2,diagnosisInputManifestVersion:1});fs.writeFileSync('product-contract.json',JSON.stringify(pc,null,2)+'\n');
+          let changelog=fs.readFileSync('CHANGELOG.md','utf8');
+          if(!changelog.startsWith('## 1.2.0\n'))changelog=`## 1.2.0\n\n- Adopt immutable Safe Core 4.11.0.\n- Bind Diagnosis Receipt v2 to Diagnosis Input Manifest v1, including deterministic prior, changed paths, artifact text digests, prompt contract and model identity.\n- Expose the canonical input manifest digest with the diagnosis result; no Receipt v1 compatibility path is retained.\n\n${changelog}`;
+          fs.writeFileSync('CHANGELOG.md',changelog);
+          NODE
+          rm .github/workflows/family-migration-bootstrap.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore(diagnose): finalize 1.2.0 family migration'
+          git push origin HEAD:family/judgment-lifecycle-v1
