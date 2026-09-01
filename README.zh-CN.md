@@ -213,3 +213,7 @@ Codex PR Safe 作为旧的模型 PR/MR Narrative 身份继续保持退役。Code
 ## License
 
 MIT
+
+## 中转站凭据与局域网 HTTP
+
+Codex Diagnose Safe 1.3.0 统一消费 Core Runtime/Provider Contract v2。使用 `--provider-credential-source auto|env|auth-json`；`auto` 会优先读取配置的 Provider 环境变量，否则由 Core 读取 `${CODEX_HOME}/auth.json` 或 `~/.codex/auth.json`。auth 文件必须是 `auth_mode=apikey` 且包含 `OPENAI_API_KEY`。非 loopback 的 `http://` 中转地址必须显式加 `--provider-allow-insecure-http`。
