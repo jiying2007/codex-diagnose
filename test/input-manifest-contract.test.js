@@ -4,8 +4,10 @@ const assert=require('node:assert/strict');
 const core=require('../src/codex-safe-core');
 const contract=require('../product-contract.json');
 
-test('Diagnose 1.2 binds Receipt v2 to the full model-visible input manifest',()=>{
-  assert.equal(contract.safeCoreVersion,'4.11.0');
+test('Diagnose 1.3 binds Receipt v2 to the full model-visible input manifest',()=>{
+  assert.equal(contract.safeCoreVersion,'4.12.0');
+  assert.equal(contract.codexRuntimeVersion,2);
+  assert.equal(contract.providerContractVersion,2);
   assert.equal(contract.diagnosisInputManifestVersion,1);
   assert.equal(contract.diagnosisReceiptVersion,2);
   assert.equal(core.DIAGNOSIS_INPUT_MANIFEST_VERSION,1);
