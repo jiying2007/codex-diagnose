@@ -213,3 +213,7 @@ Codex PR Safe remains retired as the former model-generated narrative identity. 
 ## License
 
 MIT
+
+## Relay credentials and private-network HTTP
+
+Codex Diagnose Safe 1.3.0 consumes Core Runtime/Provider Contract v2. Use `--provider-credential-source auto|env|auth-json`; `auto` prefers the configured provider environment variable and otherwise reads `${CODEX_HOME}/auth.json` or `~/.codex/auth.json` through Core. The auth file must use `auth_mode=apikey` with `OPENAI_API_KEY`. Non-loopback `http://` relays require the explicit `--provider-allow-insecure-http` switch.
