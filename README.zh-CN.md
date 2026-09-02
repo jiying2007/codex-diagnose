@@ -2,20 +2,20 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Codex Diagnose Safe 是 Codex Safe Family 中专门负责 **CI / Build / Test 失败根因诊断**的产品。它可以分析本地失败日志或 GitLab Self-Managed 的失败 Job/Pipeline，先确定性压缩噪声日志，再对一个选定失败源最多执行一次 Codex 诊断，并输出机器可验证的 **Diagnosis Receipt v1**。
+Codex Diagnose Safe 是 Codex Safe Family 中专门负责 **CI / Build / Test 失败根因诊断**的产品。它可以分析本地失败日志或 GitLab Self-Managed 的失败 Job/Pipeline，先确定性压缩噪声日志，再对一个选定失败源最多执行一次 Codex 诊断，并输出机器可验证的 **Diagnosis Receipt v2**。
 
 它是产品族中“失败后的根因诊断”产品：Review Safe / Review Service 负责代码变更风险，Diagnose 负责解释已经发生的 CI/build/test 失败。它不是 CI Runner、重试机器人、自动修复器、PR/MR 描述生成器，也不替代 GitLab Pipeline。
 
 ## 产品契约
 
-`product-contract.json` 是 v1.1.4 当前产品身份的机器校验来源：
+`product-contract.json` 是 v1.4.0 的机器校验产品身份：
 
-- Diagnose：**1.1.4**
-- Safe Core：精确提交 `cd9788f1280a217fbe6d0beb59682a85a8b82c4d` / v4.10.2
+- Diagnose：**1.4.0**
+- Safe Core：精确提交 `d95f67cc61ce66c16e2aa440829655919e906a75` / v4.13.0
 - Safe Contract：**v2**
 - Diagnose Prompt Contract：**v1**
 - Diagnosis Contract：**v1**
-- Diagnosis Receipt：**v1**
+- Diagnosis Receipt：**v2**
 - Node：**22 >=22.22.2 <23** 或 **24 >=24.19.0 <25**
 - GitLab Self-Managed 兼容下限：**14.6.1**
 
@@ -163,7 +163,7 @@ Secret 值不会出现在 CLI 参数中。
 JSON 包含：
 
 - `diagnosis`：分类、根因、置信度、主要证据、相关失败、受影响文件、建议动作、是否建议 retry；
-- `receipt`：Diagnosis Receipt v1，绑定 subject/evidence/diagnosis fingerprint 与模型/Codex 身份；
+- `receipt`：Diagnosis Receipt v2，绑定 subject/evidence/diagnosis fingerprint 与模型/Codex 身份；
 - `evidence`：只输出受限 metadata/digest，不输出原始 Trace；
 - `execution`：Token usage、请求估算和 Runtime 身份；
 - `publication`：可选 MR IID；
@@ -217,3 +217,8 @@ MIT
 ## 中转站凭据与局域网 HTTP
 
 Codex Diagnose Safe 1.3.1 统一消费 Core Runtime/Provider Contract v2。使用 `--provider-credential-source auto|env|auth-json`；`auto` 会优先读取配置的 Provider 环境变量，否则由 Core 读取 `${CODEX_HOME}/auth.json` 或 `~/.codex/auth.json`。auth 文件必须是 `auth_mode=apikey` 且包含 `OPENAI_API_KEY`。非 loopback 的 `http://` 中转地址必须显式加 `--provider-allow-insecure-http`。
+
+
+## Runtime Contract v3 — 零配置中转站
+
+默认 Auto Runtime 复用当前机器/容器的 `~/.codex/config.toml` 与 `auth.json`；私网 IP HTTP 可继承并提示明文风险，公网 HTTP 继续 fail-closed。
