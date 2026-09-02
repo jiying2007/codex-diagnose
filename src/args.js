@@ -1,7 +1,7 @@
 'use strict';
 
 const path=require('node:path');
-const PROVIDERS=new Set(['openai','openai-compatible']);
+const PROVIDERS=new Set(['auto','openai','openai-compatible']);
 const CREDENTIAL_SOURCES=new Set(['auto','env','auth-json']);
 const NOTIFY_PROVIDERS=new Set(['feishu','wecom']);
 function error(message){const e=new Error(message);e.code='EARGS';return e;}
@@ -9,10 +9,9 @@ function integer(value,name,min,max){if(!/^\d+$/.test(String(value||'')))throw e
 function cleanString(value,name,max=2048){const text=String(value||'').trim();if(!text||text.length>max||/[\r\n\0]/.test(text))throw error(`${name} is invalid`);return text;}
 function envName(value,name){const text=cleanString(value,name,128);if(!/^[A-Za-z_][A-Za-z0-9_]*$/.test(text))throw error(`${name} must be an environment variable name`);return text;}
 function artifactSpec(value){const raw=cleanString(value,'--artifact',1024),i=raw.indexOf(':');if(i<=0)throw error('--artifact must be kind:repository/path');const kind=raw.slice(0,i).toLowerCase(),file=raw.slice(i+1).replace(/\\/g,'/').replace(/^\.\//,'');if(!/^[a-z0-9][a-z0-9_-]{0,31}$/.test(kind)||!file||file.startsWith('/')||file.split('/').includes('..'))throw error('--artifact is invalid');return Object.freeze({kind,path:file});}
-function usage(){return `Codex Diagnose Safe 1.3.1\n\nUsage:\n  codex-diagnose --log build.log [options]\n  codex-diagnose --gitlab-url https://gitlab.example --project group/project --pipeline 123 [options]\n  codex-diagnose --gitlab-url https://gitlab.example --project 7 --job 456 [options]\n\nOptions:\n  --deterministic-only         Skip Codex and emit deterministic classification only\n  --artifact kind:path         Add a text CI artifact from the selected GitLab job(s)\n  --output FILE                Write machine JSON result\n  --markdown FILE              Write deterministic Markdown summary\n  --publish                    Upsert the diagnosis on the related/provided MR\n  --mr IID                     Explicit merge request IID for --publish\n  --notify-provider feishu|wecom\n  --notify-webhook-env ENV     Webhook URL environment variable (never pass secret URLs directly)\n  --codex PATH                 Codex executable (default: codex)\n  --model NAME                 Explicit Codex model\n  --max-estimated-tokens N     Preflight request ceiling (default: 50000)\n  --provider-mode openai|openai-compatible\n  --provider-base-url URL      Required only for openai-compatible\n  --provider-api-key-env ENV   Credential env reference only\n  --provider-credential-source auto|env|auth-json\n  --provider-allow-insecure-http  Explicitly allow trusted non-loopback HTTP relay\n  --gitlab-token-env ENV       GitLab token env reference (default: GITLAB_API_TOKEN)\n  --help\n  --version`;
-}
+function usage(){return `Codex Diagnose Safe 1.4.0\n\nUsage:\n  codex-diagnose --log build.log [options]\n  codex-diagnose --gitlab-url https://gitlab.example --project group/project --pipeline 123 [options]\n  codex-diagnose --gitlab-url https://gitlab.example --project 7 --job 456 [options]\n\nOptions:\n  --deterministic-only         Skip Codex and emit deterministic classification only\n  --artifact kind:path         Add a text CI artifact from the selected GitLab job(s)\n  --output FILE                Write machine JSON result\n  --markdown FILE              Write deterministic Markdown summary\n  --publish                    Upsert the diagnosis on the related/provided MR\n  --mr IID                     Explicit merge request IID for --publish\n  --notify-provider feishu|wecom\n  --notify-webhook-env ENV     Webhook URL environment variable (never pass secret URLs directly)\n  --codex PATH                 Codex executable (default: codex)\n  --model NAME                 Explicit Codex model\n  --max-estimated-tokens N     Preflight request ceiling (default: 50000)\n  --provider-mode auto|openai|openai-compatible\n                              Advanced override; default auto reuses machine Codex/Family Runtime\n  --provider-base-url URL      Required only for explicit openai-compatible override\n  --provider-api-key-env ENV   Credential env reference for explicit compatible override\n  --provider-credential-source auto|env|auth-json\n  --provider-allow-insecure-http  Explicit compatible-provider override only\n  --gitlab-token-env ENV       GitLab token env reference (default: GITLAB_API_TOKEN)\n  --help\n  --version`;}
 function parseArgs(argv=process.argv.slice(2)){
-  const out={help:false,version:false,logFile:'',gitlabUrl:'',project:'',pipelineId:0,jobId:0,mrIid:0,gitlabTokenEnv:'GITLAB_API_TOKEN',codexPath:'codex',model:'',outputFile:'',markdownFile:'',deterministicOnly:false,maxEstimatedTokens:50000,providerMode:'openai',providerBaseUrl:'',providerApiKeyEnv:'OPENAI_API_KEY',providerCredentialSource:'auto',providerAllowInsecureHttp:false,artifacts:[],publish:false,notifyProvider:'',notifyWebhookEnv:''};
+  const out={help:false,version:false,logFile:'',gitlabUrl:'',project:'',pipelineId:0,jobId:0,mrIid:0,gitlabTokenEnv:'GITLAB_API_TOKEN',codexPath:'codex',model:'',outputFile:'',markdownFile:'',deterministicOnly:false,maxEstimatedTokens:50000,providerMode:'auto',providerBaseUrl:'',providerApiKeyEnv:'OPENAI_API_KEY',providerCredentialSource:'auto',providerAllowInsecureHttp:false,artifacts:[],publish:false,notifyProvider:'',notifyWebhookEnv:''};
   const take=(i,name)=>{if(i+1>=argv.length)throw error(`${name} requires a value`);return argv[i+1];};
   for(let i=0;i<argv.length;i++){
     const a=argv[i];
@@ -49,8 +48,14 @@ function parseArgs(argv=process.argv.slice(2)){
   if(local&&(out.publish||out.mrIid||out.artifacts.length))throw error('--publish/--mr/--artifact require GitLab mode');
   if(out.publish&&!remote)throw error('--publish requires GitLab mode');
   if(Boolean(out.notifyProvider)!==Boolean(out.notifyWebhookEnv))throw error('--notify-provider and --notify-webhook-env must be used together');
-  if(out.providerMode==='openai-compatible'){if(!out.providerBaseUrl)throw error('--provider-base-url is required for openai-compatible');if(out.providerApiKeyEnv==='OPENAI_API_KEY')out.providerApiKeyEnv='CODEX_PROVIDER_API_KEY';}
-  else {if(out.providerBaseUrl)throw error('--provider-base-url is only valid for openai-compatible');if(out.providerCredentialSource!=='auto'||out.providerAllowInsecureHttp)throw error('--provider-credential-source/--provider-allow-insecure-http require openai-compatible');}
+  if(out.providerMode==='openai-compatible'){
+    if(!out.providerBaseUrl)throw error('--provider-base-url is required for openai-compatible');
+    if(out.providerApiKeyEnv==='OPENAI_API_KEY')out.providerApiKeyEnv='CODEX_PROVIDER_API_KEY';
+  } else {
+    if(out.providerBaseUrl)throw error('--provider-base-url requires explicit openai-compatible mode');
+    if(out.providerCredentialSource!=='auto'||out.providerAllowInsecureHttp)throw error('--provider-credential-source/--provider-allow-insecure-http require explicit openai-compatible mode');
+    if(out.providerMode==='auto'&&out.providerApiKeyEnv!=='OPENAI_API_KEY')throw error('--provider-api-key-env requires explicit openai-compatible mode');
+  }
   for(const key of ['outputFile','markdownFile'])if(out[key])out[key]=path.resolve(out[key]);
   return Object.freeze({...out,artifacts:Object.freeze(out.artifacts)});
 }
