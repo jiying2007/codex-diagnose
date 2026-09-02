@@ -5,7 +5,7 @@ const core=require('../src/codex-safe-core');
 const contract=require('../product-contract.json');
 
 test('Diagnose 1.3 binds Receipt v2 to the full model-visible input manifest',()=>{
-  assert.equal(contract.safeCoreVersion,'4.12.0');
+  assert.equal(contract.safeCoreVersion,'4.12.4');
   assert.equal(contract.codexRuntimeVersion,2);
   assert.equal(contract.providerContractVersion,2);
   assert.equal(contract.diagnosisInputManifestVersion,1);
