@@ -2,20 +2,20 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Codex Diagnose Safe is the Codex Safe Family product for **bounded CI/build/test failure root-cause diagnosis**. It analyzes a local failure log or failed GitLab Self-Managed jobs, compacts noisy traces deterministically, performs at most one Codex diagnosis for one selected source, and emits a machine-verifiable **Diagnosis Receipt v1**.
+Codex Diagnose Safe is the Codex Safe Family product for **bounded CI/build/test failure root-cause diagnosis**. It analyzes a local failure log or failed GitLab Self-Managed jobs, compacts noisy traces deterministically, performs at most one Codex diagnosis for one selected source, and emits a machine-verifiable **Diagnosis Receipt v2**.
 
 It is the Family post-failure root-cause product: Review Safe and Review Service find risks in code changes; Diagnose explains CI/build/test failures after they occur. It is not a CI runner, retry bot, code fixer, PR/MR description generator, or replacement for GitLab pipelines.
 
 ## Product contract
 
-`product-contract.json` is the machine-checked identity for v1.1.4:
+`product-contract.json` is the machine-checked identity for v1.4.0:
 
-- Diagnose: **1.1.4**
-- Safe Core: exact commit `cd9788f1280a217fbe6d0beb59682a85a8b82c4d` / v4.10.2
+- Diagnose: **1.4.0**
+- Safe Core: exact commit `d95f67cc61ce66c16e2aa440829655919e906a75` / v4.13.0
 - Safe Contract: **v2**
 - Diagnose Prompt Contract: **v1**
 - Diagnosis Contract: **v1**
-- Diagnosis Receipt: **v1**
+- Diagnosis Receipt: **v2**
 - Node: **22 >=22.22.2 <23** or **24 >=24.19.0 <25**
 - GitLab Self-Managed compatibility floor: **14.6.1**
 
@@ -163,7 +163,7 @@ The secret value is never a CLI argument.
 The JSON result contains:
 
 - `diagnosis`: classification, root cause, confidence, evidence references, affected files, recommended actions and retry recommendation;
-- `receipt`: Diagnosis Receipt v1 with subject/evidence/diagnosis fingerprints and model/Codex identity;
+- `receipt`: Diagnosis Receipt v2 with subject/evidence/diagnosis fingerprints and model/Codex identity;
 - `evidence`: only bounded metadata/digests, never the raw failure trace;
 - `execution`: token usage/request estimate and runtime identity;
 - `publication`: optional MR IID;
@@ -214,6 +214,8 @@ Codex PR Safe remains retired as the former model-generated narrative identity. 
 
 MIT
 
-## Relay credentials and private-network HTTP
+## Runtime Contract v3 — zero-config relay
 
-Codex Diagnose Safe 1.3.1 consumes Core Runtime/Provider Contract v2. Use `--provider-credential-source auto|env|auth-json`; `auto` prefers the configured provider environment variable and otherwise reads `${CODEX_HOME}/auth.json` or `~/.codex/auth.json` through Core. The auth file must use `auth_mode=apikey` with `OPENAI_API_KEY`. Non-loopback `http://` relays require the explicit `--provider-allow-insecure-http` switch.
+Codex Diagnose Safe 1.4.0 defaults to **Auto** runtime discovery. If `codex` already works for the current OS account/container, Diagnose reuses machine Family Runtime (`~/.codex-safe/runtime.json`) or machine Codex configuration (`${CODEX_HOME}/config.toml` / `~/.codex/config.toml`) without requiring provider flags. Credentials remain in the configured environment variable or `${CODEX_HOME}/auth.json` / `~/.codex/auth.json`; secret values never enter argv.
+
+Literal private-IP HTTP relays inherited from machine-owned Codex configuration are accepted with a plaintext warning by Core. Public/non-IP HTTP remains fail-closed unless a machine-scoped Family Runtime explicitly trusts it. `--provider-mode openai|openai-compatible` and related flags are advanced per-command overrides, not normal setup.
