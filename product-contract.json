@@ -8,10 +8,7 @@
   "diagnosisReceiptVersion": 2,
   "minimumNodeVersion": "22.22.2",
   "canonicalNodeVersion": "24.19.0",
-  "supportedNodeMajors": [
-    22,
-    24
-  ],
+  "supportedNodeMajors": [22, 24],
   "gitLabMinimumVersion": "14.6.1",
   "productContractVersion": 1,
   "productId": "codex-diagnose",
