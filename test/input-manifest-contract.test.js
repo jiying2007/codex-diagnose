@@ -6,7 +6,7 @@ const contract=require('../product-contract.json');
 
 test('Diagnose current product binds Receipt v2 to the full model-visible input manifest',()=>{
   assert.equal(contract.productVersion,contract.diagnoseVersion);
-  assert.equal(contract.safeCoreVersion,'4.13.0');
+  assert.equal(contract.safeCoreVersion,'4.13.1');
   assert.equal(contract.codexRuntimeVersion,3);
   assert.equal(contract.providerContractVersion,3);
   assert.equal(contract.diagnosisInputManifestVersion,1);
