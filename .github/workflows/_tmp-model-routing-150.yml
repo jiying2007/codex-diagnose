@@ -1,0 +1,70 @@
+name: Temporary Diagnose 1.5 Model Routing Finalizer
+
+on:
+  push:
+    branches: ["feat/model-routing-v1-runtime"]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/model-routing-v1-runtime
+          fetch-depth: 0
+      - name: Apply deterministic Diagnose 1.5 routing migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def rep(path,old,new):
+              p=Path(path); t=p.read_text()
+              if old not in t: raise SystemExit(f'missing anchor in {path}: {old[:100]!r}')
+              p.write_text(t.replace(old,new,1))
+
+          # CLI: dynamic version + routing controls. Explicit --model keeps historical exact-model semantics by becoming fixed.
+          rep('src/args.js',"const path=require('node:path');\n","const path=require('node:path');\nconst {version:PACKAGE_VERSION}=require('../package.json');\n")
+          rep('src/args.js',"const NOTIFY_PROVIDERS=new Set(['feishu','wecom']);\n","const NOTIFY_PROVIDERS=new Set(['feishu','wecom']);\nconst MODEL_SELECTIONS=new Set(['auto','preference','fixed']);\nconst MODEL_COMPATIBILITY=new Set(['strict','warn','permissive']);\n")
+          rep('src/args.js',"function usage(){return `Codex Diagnose Safe 1.4.0\\n\\nUsage:","function usage(){return `Codex Diagnose Safe ${PACKAGE_VERSION}\\n\\nUsage:")
+          rep('src/args.js',"  --model NAME                 Explicit Codex model\\n","  --model NAME                 Explicit Codex model (implies fixed selection unless --model-selection is set)\\n  --model-selection auto|preference|fixed\\n                              Model Routing Contract v1 strategy (default: auto)\\n  --model-candidate P/M        Ordered provider/model candidate; repeat for preference mode\\n  --model-compatibility strict|warn|permissive\\n                              Compatibility policy (auto/preference default strict; fixed default warn)\\n")
+          rep('src/args.js',"model:'',outputFile:'',markdownFile:'',deterministicOnly:false,maxEstimatedTokens:50000,","model:'',modelSelectionStrategy:'auto',modelSelectionExplicit:false,modelCandidates:[],modelCompatibilityPolicy:'strict',modelCompatibilityExplicit:false,outputFile:'',markdownFile:'',deterministicOnly:false,maxEstimatedTokens:50000,")
+          rep('src/args.js',"    else if(a==='--model'){out.model=cleanString(take(i,a),a,128);i++;}\n","    else if(a==='--model'){out.model=cleanString(take(i,a),a,256);i++;}\n    else if(a==='--model-selection'){out.modelSelectionStrategy=cleanString(take(i,a),a,32);if(!MODEL_SELECTIONS.has(out.modelSelectionStrategy))throw error('--model-selection is unsupported');out.modelSelectionExplicit=true;i++;}\n    else if(a==='--model-candidate'){const text=cleanString(take(i,a),a,384),slash=text.indexOf('/');if(slash<=0||slash===text.length-1)throw error('--model-candidate must be provider/model');out.modelCandidates.push(Object.freeze({provider:text.slice(0,slash),model:text.slice(slash+1)}));if(out.modelCandidates.length>8)throw error('--model-candidate may be repeated at most 8 times');i++;}\n    else if(a==='--model-compatibility'){out.modelCompatibilityPolicy=cleanString(take(i,a),a,32);if(!MODEL_COMPATIBILITY.has(out.modelCompatibilityPolicy))throw error('--model-compatibility is unsupported');out.modelCompatibilityExplicit=true;i++;}\n")
+          rep('src/args.js',"  if(out.help||out.version)return Object.freeze(out);\n","  if(out.model&&!out.modelSelectionExplicit)out.modelSelectionStrategy='fixed';\n  if(out.modelSelectionStrategy==='fixed'&&!out.model)throw error('--model is required when --model-selection=fixed');\n  if(out.modelSelectionStrategy==='preference'&&!out.modelCandidates.length)throw error('--model-candidate is required when --model-selection=preference');\n  if(!out.modelCompatibilityExplicit)out.modelCompatibilityPolicy=out.modelSelectionStrategy==='fixed'?'warn':'strict';\n  if(out.help||out.version)return Object.freeze({...out,modelCandidates:Object.freeze(out.modelCandidates)});\n")
+          rep('src/args.js',"  return Object.freeze({...out,artifacts:Object.freeze(out.artifacts)});\n","  return Object.freeze({...out,artifacts:Object.freeze(out.artifacts),modelCandidates:Object.freeze(out.modelCandidates)});\n")
+
+          # Runtime: balanced Reviewer route when Registry exists; otherwise preserve unmanaged CLI/default execution.
+          rep('src/codex.js',"const {resolveCodexRuntime}=require('./codex-safe-core/codex-runtime-resolver');\n","const {resolveCodexRuntime}=require('./codex-safe-core/codex-runtime-resolver');\nconst {resolveModelRegistry}=require('./codex-safe-core/model-registry-resolver');\nconst {resolveModelSelection,buildModelEvidence}=require('./codex-safe-core/model-routing');\n")
+          old="async function runCodexDiagnosis({evidence,deterministic,changedPaths=[],artifactTexts=[],options={}}={}){const runner=createProcessRunner((_zh,en)=>en),cli=createCodexCli({runPreparedProcess:runner.runPreparedProcess,tempPrefix:'codex-diagnose-'}),runtimeResolution=inspectRuntimeFromOptions(options),runtime=runtimeResolution.runtime,input=buildDiagnosisPrompt({evidence,deterministic,changedPaths,artifactTexts});const result=await cli.runStructuredCodex({codexPath:options.codexPath||'codex',model:options.model||'',runtime,phase:'diagnosis',schema:diagnosisOutputSchema(),input,schemaFileName:'diagnosis-schema.json',maxEstimatedTokens:options.maxEstimatedTokens||50000,estimatedOutputTokens:1400,processOptions:{env:process.env}});return Object.freeze({diagnosis:normalizeDiagnosisResult(result.parsed,evidence),model:options.model||'cli-default',codexVersion:result.resolved?.version||'',usage:result.usage||{},durationMs:result.durationMs||0,requestEstimate:result.requestEstimate||null,provider:result.provider||null,runtimeSource:runtimeResolution.source,runtimeConfigPath:runtimeResolution.configPath});}\n"
+          new="async function runCodexDiagnosis({evidence,deterministic,changedPaths=[],artifactTexts=[],options={}}={}){const runner=createProcessRunner((_zh,en)=>en),cli=createCodexCli({runPreparedProcess:runner.runPreparedProcess,tempPrefix:'codex-diagnose-'}),runtimeResolution=inspectRuntimeFromOptions(options),runtime=runtimeResolution.runtime,input=buildDiagnosisPrompt({evidence,deterministic,changedPaths,artifactTexts}),registryResolution=resolveModelRegistry();let model=String(options.model||'').trim(),selection=null;if(registryResolution.registry){const strategy=String(options.modelSelectionStrategy||'auto'),provider=String(runtimeResolution.providerId||runtime?.provider?.mode||'').trim(),request={registry:registryResolution.registry,role:'reviewer',mode:'balanced',strategy,provider,compatibilityPolicy:options.modelCompatibilityPolicy||(strategy==='fixed'?'warn':'strict'),crossProvider:false};if(strategy==='fixed'){request.model=model;request.fixed={provider,model};}else if(strategy==='preference')request.candidates=options.modelCandidates||[];selection=resolveModelSelection(request);model=selection.resolvedModel;}const result=await cli.runStructuredCodex({codexPath:options.codexPath||'codex',model,runtime,phase:'diagnosis',schema:diagnosisOutputSchema(),input,schemaFileName:'diagnosis-schema.json',maxEstimatedTokens:options.maxEstimatedTokens||50000,estimatedOutputTokens:1400,processOptions:{env:process.env}}),modelEvidence=selection?buildModelEvidence(selection,{usage:result.usage,routingPolicyRevision:'diagnose-1.5.0-v1',lineagePinned:false}):null;return Object.freeze({diagnosis:normalizeDiagnosisResult(result.parsed,evidence),model:model||'cli-default',codexVersion:result.resolved?.version||'',usage:result.usage||{},durationMs:result.durationMs||0,requestEstimate:result.requestEstimate||null,provider:result.provider||null,runtimeSource:runtimeResolution.source,runtimeConfigPath:runtimeResolution.configPath,modelRoutingContractVersion:1,modelRoutingManaged:Boolean(selection),modelRegistrySource:registryResolution.source,modelRegistryRevision:selection?.registryRevision||'',modelEvidence});}\n"
+          rep('src/codex.js',old,new)
+          rep('src/diagnose.js',"  let diagnosis,model='',codexVersion='',usage={},durationMs=0,requestEstimate=null;\n","  let diagnosis,model='',codexVersion='',usage={},durationMs=0,requestEstimate=null,modelEvidence=null,modelRoutingManaged=false,modelRegistryRevision='';\n")
+          rep('src/diagnose.js',"diagnosis=result.diagnosis;model=result.model;codexVersion=result.codexVersion;usage=result.usage;durationMs=result.durationMs;requestEstimate=result.requestEstimate;}","diagnosis=result.diagnosis;model=result.model;codexVersion=result.codexVersion;usage=result.usage;durationMs=result.durationMs;requestEstimate=result.requestEstimate;modelEvidence=result.modelEvidence||null;modelRoutingManaged=Boolean(result.modelRoutingManaged);modelRegistryRevision=result.modelRegistryRevision||'';}")
+          rep('src/diagnose.js',"execution:{mode:options.deterministicOnly?'deterministic':'codex',model,codexVersion,usage,durationMs,requestEstimate,inputManifest:","execution:{mode:options.deterministicOnly?'deterministic':'codex',model,codexVersion,usage,durationMs,requestEstimate,modelRoutingContractVersion:options.deterministicOnly?null:1,modelRoutingManaged,modelRegistryRevision,modelEvidence,inputManifest:")
+
+          # Tests + package identity and packaging boundary.
+          rep('test/args.test.js',"assert.equal(v.providerMode,'auto');});","assert.equal(v.providerMode,'auto');assert.equal(v.modelSelectionStrategy,'auto');assert.equal(v.modelCompatibilityPolicy,'strict');});")
+          rep('test/args.test.js',"test('provider overrides are explicit and fail closed'","test('model routing args preserve explicit model semantics and validate preference',()=>{const fixed=parseArgs(['--log','a','--model','exact-model']);assert.equal(fixed.modelSelectionStrategy,'fixed');assert.equal(fixed.modelCompatibilityPolicy,'warn');const pref=parseArgs(['--log','a','--model-selection','preference','--model-candidate','relay/fast-a','--model-candidate','relay/balanced-b']);assert.deepEqual(pref.modelCandidates,[{provider:'relay',model:'fast-a'},{provider:'relay',model:'balanced-b'}]);assert.throws(()=>parseArgs(['--log','a','--model-selection','fixed']),/--model is required/);assert.throws(()=>parseArgs(['--log','a','--model-selection','preference']),/--model-candidate is required/);});\ntest('provider overrides are explicit and fail closed'")
+          Path('test/model-routing-runtime.test.js').write_text("'use strict';\nconst test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');\ntest('diagnose consumes balanced reviewer Model Routing v1 without cross-provider fallback',()=>{const source=fs.readFileSync('src/codex.js','utf8');assert.match(source,/resolveModelRegistry/);assert.match(source,/resolveModelSelection/);assert.match(source,/buildModelEvidence/);assert.match(source,/role:'reviewer',mode:'balanced'/);assert.doesNotMatch(source,/crossProvider:true/);});\n")
+          pkg=Path('package.json'); d=json.loads(pkg.read_text()); d['version']='1.5.0'; files=d['files'];
+          for f in ['src/codex-safe-core/model-registry-resolver.js','src/codex-safe-core/model-routing.js']:
+              if f not in files: files.insert(files.index('src/codex-safe-core/efficiency-planner.js')+1,f)
+          d['scripts']['check']=d['scripts']['check'].replace("node --check src/codex-safe-core/codex-runtime-resolver.js", "node --check src/codex-safe-core/codex-runtime-resolver.js && node --check src/codex-safe-core/model-registry-resolver.js && node --check src/codex-safe-core/model-routing.js")
+          pkg.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n')
+          lock=Path('package-lock.json'); ld=json.loads(lock.read_text()); ld['version']='1.5.0'; ld['packages']['']['version']='1.5.0'; lock.write_text(json.dumps(ld,ensure_ascii=False,indent=2)+'\n')
+          pc=Path('product-contract.json'); pd=json.loads(pc.read_text()); pd['productVersion']='1.5.0'; pc.write_text(json.dumps(pd,ensure_ascii=False,indent=2)+'\n')
+          ch=Path('CHANGELOG.md'); ct=ch.read_text(); heading='## 1.5.0 - 2026-09-04\n\n- Consume Core Model Routing Contract v1 with balanced execution intent and Reviewer authority for Codex diagnosis.\n- Add Machine Registry Auto routing plus explicit Preference/Fixed CLI controls and Model Evidence; cross-provider fallback remains disabled.\n- Preserve explicit --model semantics by treating it as Fixed unless a selection strategy is supplied, and derive CLI version text from package identity.\n\n';
+          if '## 1.5.0 - 2026-09-04' not in ct:
+              if '# Changelog\n' in ct: ch.write_text(ct.replace('# Changelog\n','# Changelog\n\n'+heading,1))
+              else: ch.write_text(heading+ct)
+          PY
+          git config user.name codex-safe-family-bot
+          git config user.email codex-safe-family-bot@users.noreply.github.com
+          git add -A -- ':!.github/workflows/**'
+          if ! git diff --cached --quiet; then git commit -m 'feat(diagnose): consume Model Routing Contract v1'; git push origin HEAD:feat/model-routing-v1-runtime; fi
