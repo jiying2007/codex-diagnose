@@ -8,10 +8,10 @@ It is the Family post-failure root-cause product: Review Safe and Review Service
 
 ## Product contract
 
-`product-contract.json` is the machine-checked identity for v1.4.5:
+`product-contract.json` is the machine-checked identity for v1.5.1:
 
-- Diagnose: **1.4.5**
-- Safe Core: exact commit `786e3a3fc896e0e623af6fe63dbf814ddd09bad8` / v4.15.0
+- Diagnose: **1.5.1**
+- Safe Core: exact commit `786e3a3fc896e0e623af6fe63dbf814ddd09bad8` / v4.16.0
 - Safe Contract: **v2**
 - Diagnose Prompt Contract: **v1**
 - Diagnosis Contract: **v1**
@@ -216,6 +216,6 @@ MIT
 
 ## Runtime Contract v3 — zero-config relay
 
-Codex Diagnose Safe 1.4.5 defaults to **Auto** runtime discovery. If `codex` already works for the current OS account/container, Diagnose reuses machine Family Runtime (`~/.codex-safe/runtime.json`) or machine Codex configuration (`${CODEX_HOME}/config.toml` / `~/.codex/config.toml`) without requiring provider flags. Credentials remain in the configured environment variable or `${CODEX_HOME}/auth.json` / `~/.codex/auth.json`; secret values never enter argv.
+Codex Diagnose Safe 1.5.1 defaults to **Auto** runtime discovery. If `codex` already works for the current OS account/container, Diagnose reuses machine Family Runtime (`~/.codex-safe/runtime.json`) or machine Codex configuration (`${CODEX_HOME}/config.toml` / `~/.codex/config.toml`) without requiring provider flags. Credentials remain in the configured environment variable or `${CODEX_HOME}/auth.json` / `~/.codex/auth.json`; secret values never enter argv.
 
 Literal private-IP HTTP relays inherited from machine-owned Codex configuration are accepted with a plaintext warning by Core. Public/non-IP HTTP remains fail-closed unless a machine-scoped Family Runtime explicitly trusts it. `--provider-mode openai|openai-compatible` and related flags are advanced per-command overrides, not normal setup.
