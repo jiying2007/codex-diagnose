@@ -92,6 +92,15 @@ jobs:
           node-version: '22.22.2'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Generate Consumer CI Receipt
+        env:
+          CI_SOURCE_SHA: ${{ github.sha }}
+          CI_WORKFLOW_NAME: Release
+          CI_RUN_ID: ${{ github.run_id }}
+          CI_RUN_ATTEMPT: ${{ github.run_attempt }}
+          CI_EVENT: ${{ github.event_name }}
+          CI_SUITES: validate-ci,cross-platform-ubuntu-windows-macos-node22-24,package
+        run: node src/codex-safe-core/scripts/generate-consumer-ci-receipt.js --output CONSUMER_CI_RECEIPT.json
       - name: Build reproducible package evidence
         shell: bash
         run: |
@@ -108,13 +117,15 @@ jobs:
           fi
           npm sbom --sbom-format spdx > SBOM.spdx.json
           test -s SBOM.spdx.json
-          sha256sum "$tgz" SBOM.spdx.json > SHA256SUMS
+          test -s CONSUMER_CI_RECEIPT.json
+          sha256sum "$tgz" SBOM.spdx.json CONSUMER_CI_RECEIPT.json > SHA256SUMS
       - name: Attest package provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
         with:
           subject-path: |
             codex-diagnose-safe-${{ needs.validate.outputs.version }}.tgz
             SBOM.spdx.json
+            CONSUMER_CI_RECEIPT.json
             SHA256SUMS
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
@@ -122,6 +133,7 @@ jobs:
           path: |
             codex-diagnose-safe-${{ needs.validate.outputs.version }}.tgz
             SBOM.spdx.json
+            CONSUMER_CI_RECEIPT.json
             SHA256SUMS
           if-no-files-found: error
       - name: Create exact release tag
@@ -147,7 +159,7 @@ jobs:
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "Release ${RELEASE_TAG} already exists; immutable assets will not be overwritten." >&2; exit 1
           fi
-          gh release create "$RELEASE_TAG" "$tgz" SBOM.spdx.json SHA256SUMS --title "Codex Diagnose Safe ${version}" --generate-notes --verify-tag
+          gh release create "$RELEASE_TAG" "$tgz" SBOM.spdx.json CONSUMER_CI_RECEIPT.json SHA256SUMS --title "Codex Diagnose Safe ${version}" --generate-notes --verify-tag
           immutable=false
           for attempt in {1..12}; do
             immutable=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '.immutable')
@@ -166,4 +178,5 @@ jobs:
           test "$verified" = true
           gh release verify-asset "$RELEASE_TAG" "$tgz"
           gh release verify-asset "$RELEASE_TAG" SBOM.spdx.json
+          gh release verify-asset "$RELEASE_TAG" CONSUMER_CI_RECEIPT.json
           gh release verify-asset "$RELEASE_TAG" SHA256SUMS
