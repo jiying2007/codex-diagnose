@@ -155,7 +155,15 @@ jobs:
             sleep 5
           done
           test "$immutable" = true
-          gh release verify "$RELEASE_TAG"
+          verified=false
+          for attempt in {1..12}; do
+            if gh release verify "$RELEASE_TAG"; then
+              verified=true
+              break
+            fi
+            sleep 5
+          done
+          test "$verified" = true
           gh release verify-asset "$RELEASE_TAG" "$tgz"
           gh release verify-asset "$RELEASE_TAG" SBOM.spdx.json
           gh release verify-asset "$RELEASE_TAG" SHA256SUMS
