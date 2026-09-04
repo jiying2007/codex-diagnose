@@ -8,10 +8,10 @@ Codex Diagnose Safe 是 Codex Safe Family 中专门负责 **CI / Build / Test �
 
 ## 产品契约
 
-`product-contract.json` 是 v1.4.2 的机器校验产品身份：
+`product-contract.json` 是 v1.4.5 的机器校验产品身份：
 
-- Diagnose：**1.4.3**
-- Safe Core：精确提交 `25467922eeebffa93b7c820f2ffa7590c1625381` / v4.13.1
+- Diagnose：**1.4.5**
+- Safe Core：精确提交 `e962826ee6556fd8ffa74ab1994bf43d62826f10` / v4.15.0
 - Safe Contract：**v2**
 - Diagnose Prompt Contract：**v1**
 - Diagnosis Contract：**v1**
@@ -213,10 +213,6 @@ Codex PR Safe 作为旧的模型 PR/MR Narrative 身份继续保持退役。Code
 ## License
 
 MIT
-
-## 中转站凭据与局域网 HTTP
-
-Codex Diagnose Safe 1.3.1 统一消费 Core Runtime/Provider Contract v2。使用 `--provider-credential-source auto|env|auth-json`；`auto` 会优先读取配置的 Provider 环境变量，否则由 Core 读取 `${CODEX_HOME}/auth.json` 或 `~/.codex/auth.json`。auth 文件必须是 `auth_mode=apikey` 且包含 `OPENAI_API_KEY`。非 loopback 的 `http://` 中转地址必须显式加 `--provider-allow-insecure-http`。
 
 
 ## Runtime Contract v3 — 零配置中转站
