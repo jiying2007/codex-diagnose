@@ -1,0 +1,49 @@
+name: Temporary Current Docs Repair
+
+on:
+  push:
+    branches: [chore/core-4.15]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: chore/core-4.15
+          fetch-depth: 0
+      - uses: actions/setup-node@e51e5fe84fc33b4c73ebe40526b2694712b5b858
+        with:
+          node-version: '22.22.2'
+      - name: Repair current product identity only
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          for (const file of ['README.md','README.zh-CN.md']) {
+            let s=fs.readFileSync(file,'utf8');
+            s=s.replace('machine-checked identity for v1.4.2:', 'machine-checked identity for v1.4.5:')
+               .replace('机器校验产品身份：', '机器校验产品身份：')
+               .replace('`product-contract.json` 是 v1.4.2 的机器校验产品身份：', '`product-contract.json` 是 v1.4.5 的机器校验产品身份：')
+               .replace('- Diagnose: **1.4.3**', '- Diagnose: **1.4.5**')
+               .replace('- Diagnose：**1.4.3**', '- Diagnose：**1.4.5**')
+               .replace('/ v4.13.1', '/ v4.15.0');
+            if (file === 'README.md') s=s.replace('Codex Diagnose Safe 1.4.0 defaults to **Auto** runtime discovery.', 'Codex Diagnose Safe 1.4.5 defaults to **Auto** runtime discovery.');
+            if (file === 'README.zh-CN.md') {
+              s=s.replace(/\n## 中转站凭据与局域网 HTTP\n\nCodex Diagnose Safe 1\.3\.1[\s\S]*?非 loopback 的 `http:\/\/` 中转地址必须显式加 `--provider-allow-insecure-http`。\n\n/, '\n');
+            }
+            fs.writeFileSync(file,s);
+          }
+          NODE
+          git config user.name 'codex-safe-family-bot'
+          git config user.email 'codex-safe-family-bot@users.noreply.github.com'
+          git add README.md README.zh-CN.md
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m 'docs(diagnose): align current identity with 1.4.5 and Core 4.15'
+          git push origin HEAD:chore/core-4.15
