@@ -1,5 +1,5 @@
 {
-  "diagnoseVersion": "1.5.2",
+  "diagnoseVersion": "1.5.3",
   "safeCoreMajorVersion": 4,
   "safeCoreCommit": "00403dd14877e978698c63d06f6dbdfe2ba9b8cc",
   "safeContractVersion": 2,
@@ -15,7 +15,7 @@
   "gitLabMinimumVersion": "14.6.1",
   "productContractVersion": 2,
   "productId": "codex-diagnose",
-  "productVersion": "1.5.2",
+  "productVersion": "1.5.3",
   "safeCoreVersion": "4.17.0",
   "policySchemaVersion": 4,
   "qualityPlatformVersion": 3,
