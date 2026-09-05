@@ -1,6 +1,6 @@
 {
   "name": "codex-diagnose-safe",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "private": true,
   "description": "Safe CI/build/test failure root-cause diagnosis for local logs and GitLab Self-Managed pipelines",
   "license": "MIT",

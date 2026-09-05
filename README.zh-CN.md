@@ -10,8 +10,8 @@ Codex Diagnose Safe 是 Codex Safe Family 中专门负责 **CI / Build / Test �
 
 `product-contract.json` 是 v1.5.1 的机器校验产品身份：
 
-- Diagnose：**1.5.1**
-- Safe Core：精确提交 `786e3a3fc896e0e623af6fe63dbf814ddd09bad8` / v4.16.0
+- Diagnose：**1.5.2**
+- Safe Core：精确提交 `00403dd14877e978698c63d06f6dbdfe2ba9b8cc` / v4.16.0
 - Safe Contract：**v2**
 - Diagnose Prompt Contract：**v1**
 - Diagnosis Contract：**v1**
@@ -217,4 +217,4 @@ MIT
 
 ## Runtime Contract v3 — 零配置中转站
 
-Codex Diagnose Safe 1.5.1 默认 Auto Runtime 复用当前机器/容器的 `~/.codex/config.toml` 与 `auth.json`；私网 IP HTTP 可继承并提示明文风险，公网 HTTP 继续 fail-closed。
+Codex Diagnose Safe 1.5.2 默认 Auto Runtime 复用当前机器/容器的 `~/.codex/config.toml` 与 `auth.json`；私网 IP HTTP 可继承并提示明文风险，公网 HTTP 继续 fail-closed。
