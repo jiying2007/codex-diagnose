@@ -112,7 +112,7 @@ jobs:
           tar -tzf "$tgz" > /tmp/package-files.txt
           grep -Fx 'package/src/cli.js' /tmp/package-files.txt
           grep -Fx 'package/src/codex-safe-core/diagnosis-platform.js' /tmp/package-files.txt
-          if grep -E '^package/(test|scripts|\.github|\.gitmodules|src/codex-safe-core/(test|\.github|package\.json))' /tmp/package-files.txt; then
+          if grep -E '^package/(test/|scripts/|\.github/|\.gitmodules$|src/codex-safe-core/(test/|\.github/|package\.json$))' /tmp/package-files.txt; then
             echo 'package contains development-only files' >&2; exit 1
           fi
           npm sbom --sbom-format spdx > SBOM.spdx.json
