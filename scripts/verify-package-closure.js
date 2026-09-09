@@ -1,0 +1,7 @@
+'use strict';
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{execFileSync}=require('node:child_process');
+function npmInvocation({platform=process.platform,env=process.env,nodeExecPath=process.execPath}={}){if(env.npm_execpath)return{command:nodeExecPath,args:[env.npm_execpath]};if(platform==='win32')return{command:env.ComSpec||'cmd.exe',args:['/d','/s','/c','npm.cmd']};return{command:'npm',args:[]};}
+function verifyPackageClosure(){const root=path.resolve(__dirname,'..'),tmp=fs.mkdtempSync(path.join(os.tmpdir(),'codex-diagnose-package-closure-'));
+try{const npm=npmInvocation(),raw=execFileSync(npm.command,[...npm.args,'pack','--ignore-scripts','--json','--pack-destination',tmp],{cwd:root,encoding:'utf8'}),artifact=path.join(tmp,JSON.parse(raw)[0].filename),unpack=path.join(tmp,'unpack');fs.mkdirSync(unpack);execFileSync('tar',['-xzf',artifact,'-C',unpack]);const packageRoot=path.join(unpack,'package'),entry=path.join(packageRoot,'src','codex-safe-core','index.js');if(!fs.existsSync(entry))throw new Error('Packaged Safe Core index is missing.');require(entry);for(const runtime of ['src/cli.js','src/diagnose.js','src/notify.js'])if(!fs.existsSync(path.join(packageRoot,runtime)))throw new Error(`Packaged runtime entry is missing: ${runtime}`);console.log('Diagnose package module closure verified.');}finally{fs.rmSync(tmp,{recursive:true,force:true});}}
+if(require.main===module)verifyPackageClosure();
+module.exports={npmInvocation,verifyPackageClosure};
