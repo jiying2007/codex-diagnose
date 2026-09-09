@@ -1,10 +1,10 @@
 'use strict';
 const assert=require('node:assert/strict');
 const test=require('node:test');
-const {platformCommand}=require('../scripts/verify-package-closure');
+const {npmInvocation}=require('../scripts/verify-package-closure');
 
-test('package closure selects the platform npm executable',()=>{
-  assert.equal(platformCommand('npm','win32'),'npm.cmd');
-  assert.equal(platformCommand('npm','linux'),'npm');
-  assert.equal(platformCommand('tar','win32'),'tar');
+test('package closure executes npm portably through its CLI entry',()=>{
+  assert.deepEqual(npmInvocation({platform:'win32',env:{npm_execpath:'C:\\npm\\npm-cli.js'},nodeExecPath:'C:\\node.exe'}),{command:'C:\\node.exe',args:['C:\\npm\\npm-cli.js']});
+  assert.deepEqual(npmInvocation({platform:'win32',env:{ComSpec:'C:\\Windows\\cmd.exe'}}),{command:'C:\\Windows\\cmd.exe',args:['/d','/s','/c','npm.cmd']});
+  assert.deepEqual(npmInvocation({platform:'linux',env:{}}),{command:'npm',args:[]});
 });
