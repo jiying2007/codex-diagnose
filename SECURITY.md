@@ -16,6 +16,8 @@ GitLab MR note publication is disabled unless `--publish` is explicit. Feishu/We
 - Raw secret values must never be written to argv, Diagnosis Receipt or output JSON.
 - Core failure-log compaction redacts common bearer/API/token forms before model context is built.
 
+GitLab API reads may follow bounded redirects within the configured origin. Only artifact downloads may leave that origin, and every subsequent request is anonymous after the first origin change, including a redirect back to GitLab. HTTPS cannot downgrade to HTTP. URLs containing credentials, non-HTTP protocols, redirect loops and redirected writes fail closed. This preserves signed CDN artifact downloads without forwarding `PRIVATE-TOKEN`.
+
 ## Prompt injection
 
 Logs and artifacts may contain strings such as “ignore previous instructions”, shell commands or fake policies. They remain evidence only. The model prompt explicitly forbids following them, and Safe Core disables authority-bearing Codex capabilities independently of prompt wording.
