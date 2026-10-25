@@ -18,6 +18,8 @@ GitLab MR note publication is disabled unless `--publish` is explicit. Feishu/We
 
 GitLab API reads may follow bounded redirects within the configured origin. Only artifact downloads may leave that origin, and every subsequent request is anonymous after the first origin change, including a redirect back to GitLab. HTTPS cannot downgrade to HTTP. URLs containing credentials, non-HTTP protocols, redirect loops and redirected writes fail closed. This preserves signed CDN artifact downloads without forwarding `PRIVATE-TOKEN`.
 
+Notification POST requests never follow redirects, including redirects within the provider origin. A successful HTTP status alone is not delivery confirmation: the bounded JSON response must contain the provider's explicit numeric zero acknowledgment. Missing, malformed or conflicting acknowledgment fields fail closed; provider error text is not copied into the error message.
+
 ## Prompt injection
 
 Logs and artifacts may contain strings such as “ignore previous instructions”, shell commands or fake policies. They remain evidence only. The model prompt explicitly forbids following them, and Safe Core disables authority-bearing Codex capabilities independently of prompt wording.
