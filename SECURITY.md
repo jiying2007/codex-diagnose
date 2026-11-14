@@ -14,7 +14,7 @@ GitLab MR note publication is disabled unless `--publish` is explicit. Feishu/We
 - OpenAI-compatible provider keys are referenced by environment-variable name through Safe Core.
 - Notification webhook URLs are referenced by environment-variable name and restricted to official HTTPS hosts.
 - Raw secret values must never be written to argv, Diagnosis Receipt or output JSON.
-- Core failure-log compaction redacts common bearer/API/token forms before model context is built.
+- The shared Core diagnostic scrubber runs before UTF-8 truncation on logs, artifact bodies/names, job metadata, paths and model output. It covers common credential labels, bearer/basic authorization, URL credentials, token prefixes and private-key blocks. It is a bounded-pattern scrubber, not a complete data-loss-prevention guarantee.
 
 ## Prompt injection
 
@@ -27,3 +27,9 @@ Local logs, GitLab responses, job counts, artifact contents and model request es
 ## Reporting
 
 Report vulnerabilities privately through the repository Security Advisories interface. Do not include production tokens, webhook URLs, private source code or raw confidential CI traces in public issues.
+
+## Delivered evidence and publication
+
+Artifact text is capped at 48 KiB per item, 64 KiB in aggregate and 12 items. Changed paths are capped at 200 and 16 KiB in aggregate; a path exceeding 2 KiB is omitted whole. Coverage gaps are explicit in the prepared input and result. Manifest identity hashes the actual prepared representation and, only in model mode, the delivered prompt.
+
+Local logs use the Core bounded file-descriptor reader with no final-component symlink following and before/after identity checks. MR publication rejects missing or stale source/target identity. Synthetic merged-result commits require current pipeline and parent evidence. Owned-note updates retain actor checks and exhaustive pagination; equivalent subject/input/diagnosis identity does not cause another write.

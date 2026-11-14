@@ -10,8 +10,8 @@ It is the Family post-failure root-cause product: Review Safe and Review Service
 
 `product-contract.json` is the machine-checked identity for v1.5.7:
 
-- Diagnose: **1.5.7**
-- Safe Core: exact commit `59f8a1b84158b05d0c0a5f257ffb8b2452e0b18b` / v4.16.0
+- Diagnose: **1.5.8**
+- Safe Core: exact commit `ac5203e1b65ffdca26064c0887537f64d2a8a6cb` / v4.18.5
 - Safe Contract: **v2**
 - Diagnose Prompt Contract: **v1**
 - Diagnosis Contract: **v1**
@@ -216,6 +216,12 @@ MIT
 
 ## Runtime Contract v3 — zero-config relay
 
-Codex Diagnose Safe 1.5.7 defaults to **Auto** runtime discovery. If `codex` already works for the current OS account/container, Diagnose reuses machine Family Runtime (`~/.codex-safe/runtime.json`) or machine Codex configuration (`${CODEX_HOME}/config.toml` / `~/.codex/config.toml`) without requiring provider flags. Credentials remain in the configured environment variable or `${CODEX_HOME}/auth.json` / `~/.codex/auth.json`; secret values never enter argv.
+Codex Diagnose Safe 1.5.8 defaults to **Auto** runtime discovery. If `codex` already works for the current OS account/container, Diagnose reuses machine Family Runtime (`~/.codex-safe/runtime.json`) or machine Codex configuration (`${CODEX_HOME}/config.toml` / `~/.codex/config.toml`) without requiring provider flags. Credentials remain in the configured environment variable or `${CODEX_HOME}/auth.json` / `~/.codex/auth.json`; secret values never enter argv.
 
 Literal private-IP HTTP relays inherited from machine-owned Codex configuration are accepted with a plaintext warning by Core. Public/non-IP HTTP remains fail-closed unless a machine-scoped Family Runtime explicitly trusts it. `--provider-mode openai|openai-compatible` and related flags are advanced per-command overrides, not normal setup.
+
+## Bounded evidence and current-MR publication
+
+Logs, JUnit/SARIF artifact text, job metadata, filenames and model output use one shared scrubber before UTF-8 byte limits. Artifacts receive 48 KiB each and 64 KiB in total; paths receive 200 entries and 16 KiB in total. Oversized paths are omitted whole, and count/byte omissions appear in `execution.inputManifest.coverageGaps`. Model mode records the exact delivered prompt digest. Deterministic-only mode records no model execution.
+
+`--publish` requires a unique associated open MR, or a valid explicit `--mr`. The failed commit must remain the source head, or be the current merged-results pipeline commit with matching source-parent evidence. Missing diff/project/branch identity and changes during diagnosis block publication. Equivalent bot-owned summaries are not rewritten solely because the display time changed.

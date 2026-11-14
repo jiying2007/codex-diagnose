@@ -1,6 +1,6 @@
 {
   "name": "codex-diagnose-safe",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "private": true,
   "description": "Safe CI/build/test failure root-cause diagnosis for local logs and GitLab Self-Managed pipelines",
   "license": "MIT",
@@ -31,7 +31,7 @@
     "core:init": "git submodule update --init --recursive",
     "precheck": "npm run core:init",
     "pretest": "npm run core:init",
-    "check": "node --check src/args.js && node --check src/gitlab.js && node --check src/notify.js && node --check src/codex.js && node --check src/codex-safe-core/codex-runtime-resolver.js && node --check src/codex-safe-core/model-registry-resolver.js && node --check src/codex-safe-core/model-routing.js && node --check src/failure-causality.js && node --check src/diagnose.js && node --check src/cli.js && node --check scripts/verify-manifest.js && node --check scripts/verify-package-closure.js && node scripts/verify-manifest.js && node scripts/verify-package-closure.js && npm run governance",
+    "check": "node --check src/args.js && node --check src/gitlab.js && node --check src/notify.js && node --check src/codex.js && node --check src/codex-safe-core/codex-runtime-resolver.js && node --check src/codex-safe-core/model-registry-resolver.js && node --check src/codex-safe-core/model-routing.js && node --check src/failure-causality.js && node --check src/diagnostic-input.js && node --check src/publication.js && node --check src/diagnose.js && node --check src/cli.js && node --check scripts/verify-manifest.js && node --check scripts/verify-package-closure.js && node scripts/verify-manifest.js && node scripts/verify-package-closure.js && npm run governance",
     "test": "node --test test/*.test.js",
     "governance": "node src/codex-safe-core/scripts/verify-actions-pins.js .github/workflows && node src/codex-safe-core/scripts/verify-non-goals.js .",
     "diagnostics": "node src/codex-safe-core/scripts/family-diagnostics.js",

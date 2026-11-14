@@ -2,31 +2,9 @@
 
 Codex Diagnose Safe is a thin product layer over the exact-pinned Codex Safe Core. Product code owns local/GitLab evidence acquisition and optional publication; Core owns process/Codex safety, failure-log compaction, deterministic classification, diagnosis schema/normalization and Diagnosis Receipt validation.
 
-```text
-Local log ──────────────┐
-                       │
-GitLab failed job(s) ──┼─> product acquisition/bounds
-                       │          │
-optional text artifact ┘          v
-                           Safe Core failure evidence
-                           - secret/ANSI cleanup
-                           - error-window compaction
-                           - deterministic prior
-                           - evidence digest
-                                   │
-                    deterministic-only OR one Safe Codex call
-                                   │
-                                   v
-                           structured diagnosis
-                                   │
-                           Diagnosis Receipt v1
-                                   │
-                      ┌────────────┴────────────┐
-                      v                         v
-                  JSON/Markdown          explicit side effects
-                                        - MR note upsert
-                                        - Feishu/WeCom
-```
+Acquisition reads bounded local files or GitLab responses. One shared scrubber handles log text, artifacts, filenames, job metadata and model output. The product then prepares an explicit UTF-8 byte-limited input, records omissions, and either classifies it deterministically or sends one read-only Codex request.
+
+The Diagnosis Input Manifest binds the exact prepared path/artifact representation. Model mode additionally hashes the exact delivered prompt; deterministic mode records `promptBound: false` and does not claim a model execution. Diagnosis Receipt v2 binds that input identity to the normalized result. JSON/Markdown are returned locally; optional MR publication and notifications use the same sanitized result.
 
 ## Pipeline aggregation
 
@@ -62,3 +40,9 @@ Safe Core owns generic diagnosis primitives. Codex Diagnose Safe owns `diagnose-
 ## Deterministic causal ranking
 
 Multi-job pipeline diagnosis ranks evidence using only provider-proven metadata and normalized error signatures. Duplicate signatures may be marked as cascade evidence; no unproven dependency edge is invented. The ranking remains read-only and feeds the existing single bounded Codex diagnosis.
+
+## Publication freshness and idempotency
+
+Publication resolves the full commit-to-MR association before model execution. An automatic selection requires one open MR; `--mr` selects explicitly but does not waive association or current-head checks. Complete diff refs, source/target projects and branches are bound to the initial snapshot. A merged-results commit additionally needs the current `head_pipeline` identity and commit-parent evidence containing the current source head.
+
+Immediately after exhaustive owned-note discovery and before a write, the product re-fetches the MR and rejects state/head/branch/project drift. Only the authenticated actor's unique summary can be updated. The stable subject/input/diagnosis identity makes equivalent output a no-op even when its display timestamp changes. GitLab's note write has no conditional-head argument; the final read narrows the remote read/write interval and does not claim server-atomic publication.
