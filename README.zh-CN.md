@@ -10,8 +10,8 @@ Codex Diagnose Safe 是 Codex Safe Family 中专门负责 **CI / Build / Test �
 
 `product-contract.json` 是 v1.5.7 的机器校验产品身份：
 
-- Diagnose：**1.5.7**
-- Safe Core：精确提交 `59f8a1b84158b05d0c0a5f257ffb8b2452e0b18b` / v4.16.0
+- Diagnose：**1.5.8**
+- Safe Core：精确提交 `31b94d4c1bddbe9988225eccf632a669d8b124f0` / v4.18.4
 - Safe Contract：**v2**
 - Diagnose Prompt Contract：**v1**
 - Diagnosis Contract：**v1**
@@ -217,4 +217,10 @@ MIT
 
 ## Runtime Contract v3 — 零配置中转站
 
-Codex Diagnose Safe 1.5.7 默认 Auto Runtime 复用当前机器/容器的 `~/.codex/config.toml` 与 `auth.json`；私网 IP HTTP 可继承并提示明文风险，公网 HTTP 继续 fail-closed。
+Codex Diagnose Safe 1.5.8 默认 Auto Runtime 复用当前机器/容器的 `~/.codex/config.toml` 与 `auth.json`；私网 IP HTTP 可继承并提示明文风险，公网 HTTP 继续 fail-closed。
+
+## 有界证据与当前 MR 发布
+
+日志、JUnit/SARIF 制品正文、任务元数据、文件名和模型输出统一先脱敏，再按 UTF-8 字节限额处理。制品每项最多 48 KiB、合计 64 KiB；变更路径最多 200 项、合计 16 KiB。过长路径整项省略，不截出另一个文件名；数量或字节省略记录在 `execution.inputManifest.coverageGaps`。模型模式绑定实际发送提示词的摘要；仅确定性模式不会声称执行过模型。
+
+`--publish` 要求唯一关联的开放 MR，或有效的显式 `--mr`。失败提交必须仍是当前源分支头，或是当前 merged-results 流水线提交且父提交包含当前源分支头。缺失 diff/项目/分支身份或诊断期间发生变化时停止发布。相同主题、输入和诊断结果不会仅因显示时间变化而重写机器人已有评论。
