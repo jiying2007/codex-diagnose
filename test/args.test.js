@@ -7,3 +7,11 @@ test('model routing args preserve explicit model semantics and validate preferen
 test('provider overrides are explicit and fail closed',()=>{assert.throws(()=>parseArgs(['--log','a','--provider-mode','openai-compatible']),/provider-base-url/);assert.throws(()=>parseArgs(['--log','a','--provider-base-url','https://x']),/requires explicit openai-compatible/);assert.throws(()=>parseArgs(['--log','a','--provider-api-key-env','RELAY_KEY']),/requires explicit openai-compatible/);assert.throws(()=>parseArgs(['--log','a','--provider-credential-source','auth-json']),/require explicit openai-compatible/);assert.throws(()=>artifactSpec('junit:../secret'),/invalid/);});
 
 test('artifact API paths preserve literal backslashes and significant whitespace',()=>{assert.deepEqual(artifactSpec('junit: reports\\odd.xml '),{kind:'junit',path:' reports\\odd.xml '});assert.notEqual(artifactSpec('junit:x\\y.xml').path,artifactSpec('junit:x/y.xml').path);for(const value of ['junit:./x','junit:x/../y','junit:/x','junit:x//y'])assert.throws(()=>artifactSpec(value),/invalid/);});
+
+test('artifact redirect origins are explicit, exact, bounded and only accepted for artifact reads',()=>{
+ const base=['--gitlab-url','https://gitlab.test','--project','p','--job','2','--artifact','junit:report.xml'];
+ const v=parseArgs([...base,'--artifact-redirect-origin','https://store.test:443/','--artifact-redirect-origin','https://store.test']);
+ assert.deepEqual(v.artifactRedirectOrigins,['https://store.test']);
+ for(const input of ['https://*.test','https://user:pass@store.test','https://store.test/path','https://store.test?x=1','https://store.test/#frag','file:///tmp/x'])assert.throws(()=>parseArgs([...base,'--artifact-redirect-origin',input]),/exact HTTP/);
+ assert.throws(()=>parseArgs(['--gitlab-url','https://gitlab.test','--project','p','--job','2','--artifact-redirect-origin','https://store.test']),/requires --artifact/);
+});
