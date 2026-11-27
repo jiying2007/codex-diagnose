@@ -115,6 +115,8 @@ codex-diagnose \
 
 Artifact contents are bounded before entering the model context. The Receipt binds artifact names/kinds/digests; it does not embed raw artifact contents.
 
+Same-origin artifact reads work without configuration. Cross-origin object-storage/CDN redirects are denied by default; when an administrator has verified a trusted storage endpoint, explicitly repeat `--artifact-redirect-origin https://storage.example` for each exact origin (maximum eight). Redirects never forward the GitLab credential to another origin, and HTTPS downgrade remains prohibited. This is an origin trust policy, not a DNS or network egress firewall; restrict the diagnosis process's network access separately when required.
+
 ## Optional MR publication
 
 ```bash

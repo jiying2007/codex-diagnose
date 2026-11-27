@@ -22,7 +22,7 @@ async function resolvePublishMr(client,project,commitSha,explicit){const target=
 async function runDiagnosis(options,{client=null,runCodexFn=runCodexDiagnosis}={}){
   let source;
   if(options.logFile){const log=readLocalLog(options.logFile);source={log,job:{projectId:null,pipelineId:null,jobId:null,commitSha:`local:${digest(log).slice(0,24)}`,jobName:'local log'},artifactTexts:[],artifactMeta:[],changedPaths:[],mrIid:0};}
-  else{const token=String(process.env[options.gitlabTokenEnv]||'').trim();if(!token)throw appError('EGITLABTOKEN',`GitLab token environment variable ${options.gitlabTokenEnv} is missing`);client=client||new GitLabDiagnoseClient({baseUrl:options.gitlabUrl,token});source=await collectGitLab(options,client);}
+  else{const token=String(process.env[options.gitlabTokenEnv]||'').trim();if(!token)throw appError('EGITLABTOKEN',`GitLab token environment variable ${options.gitlabTokenEnv} is missing`);client=client||new GitLabDiagnoseClient({baseUrl:options.gitlabUrl,token,artifactRedirectOrigins:options.artifactRedirectOrigins});source=await collectGitLab(options,client);}
   source={...source,job:sanitizeDiagnosticValue(source.job),failedJobs:sanitizeDiagnosticValue(source.failedJobs||[])};
   const evidence=buildDiagnosisEvidence({log:source.log,job:source.job,artifacts:source.artifactMeta}),prior=classifyFailureDeterministically(evidence.log.text);
   const prepared=prepareDiagnosticInput({evidence,deterministic:prior,changedPaths:source.changedPaths,artifactTexts:source.artifactTexts}),deliveredPrompt=options.deterministicOnly?undefined:buildDiagnosisPrompt(prepared);

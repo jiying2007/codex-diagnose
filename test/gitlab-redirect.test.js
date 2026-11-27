@@ -14,7 +14,7 @@ test('artifact redirects reach the CDN without credentials, including a redirect
   const seen=[];let origin;
   const cdn=await server((req,res)=>{seen.push(['cdn',req.headers['private-token']]);res.writeHead(302,{location:origin+'/return'});res.end();},t);
   origin=await server((req,res)=>{seen.push(['origin',req.headers['private-token']]);if(req.url==='/return')res.end('artifact');else{res.writeHead(302,{location:cdn+'/signed?key=synthetic'});res.end();}},t);
-  const client=new GitLabDiagnoseClient({baseUrl:origin,token:'synthetic-token'});
+  const client=new GitLabDiagnoseClient({baseUrl:origin,token:'synthetic-token',artifactRedirectOrigins:[cdn]});
   assert.equal(await client.getArtifactText('project',1,'report.txt'),'artifact');
   assert.deepEqual(seen,[['origin','synthetic-token'],['cdn',undefined],['origin',undefined]]);
 });
@@ -47,4 +47,28 @@ test('HTTPS downgrade, URL credentials and non-HTTP protocols are rejected',asyn
     try{await assert.rejects(new GitLabDiagnoseClient({baseUrl:'https://gitlab.invalid',token:'synthetic-token'}).getArtifactText('p',1,'a'),{code:'EGITLABREDIRECT'});assert.equal(requests,1);}
     finally{global.fetch=original;}
   }
+});
+
+test('unapproved cross-origin artifact destination is blocked before network contact',async t=>{
+ let reached=0;const target=await server((_req,res)=>{reached++;res.end('unapproved');},t);
+ const origin=await server((_req,res)=>{res.writeHead(302,{location:target+'/artifact'});res.end();},t);
+ const client=new GitLabDiagnoseClient({baseUrl:origin,token:'synthetic-token'});
+ await assert.rejects(client.getArtifactText('p',1,'a'),{code:'EGITLABREDIRECT'});
+ assert.equal(reached,0);
+});
+test('each redirect hop must remain on the original or an approved exact origin',async t=>{
+ let reached=0;const target=await server((_req,res)=>{reached++;res.end('unapproved');},t);
+ const approved=await server((_req,res)=>{res.writeHead(302,{location:target+'/artifact'});res.end();},t);
+ const origin=await server((_req,res)=>{res.writeHead(302,{location:approved+'/signed'});res.end();},t);
+ const client=new GitLabDiagnoseClient({baseUrl:origin,token:'synthetic-token',artifactRedirectOrigins:[approved]});
+ await assert.rejects(client.getArtifactText('p',1,'a'),{code:'EGITLABREDIRECT'});
+ assert.equal(reached,0);
+});
+test('approved artifact origins do not grant cross-origin GitLab API or write access',async t=>{
+ let reached=0;const target=await server((_req,res)=>{reached++;res.end('{}');},t);
+ const origin=await server((_req,res)=>{res.writeHead(302,{location:target+'/target'});res.end();},t);
+ const client=new GitLabDiagnoseClient({baseUrl:origin,token:'synthetic-token',artifactRedirectOrigins:[target]});
+ await assert.rejects(client.getJob('p',1),{code:'EGITLABREDIRECT'});
+ await assert.rejects(client.request('POST','/notes',{body:{body:'x'}}),{code:'EGITLABREDIRECT'});
+ assert.equal(reached,0);
 });

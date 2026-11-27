@@ -115,6 +115,8 @@ codex-diagnose \
 
 Artifact 内容进入模型前会限长；Receipt 只绑定 kind/name/digest，不嵌入原始 Artifact。
 
+同源 Artifact 无需配置。跨源对象存储/CDN 跳转默认拒绝；管理员确认可信存储端点后，可重复指定 `--artifact-redirect-origin https://storage.example`（最多八个精确 origin）。跨源跳转不传递 GitLab 凭据，禁止 HTTPS 降级。该配置是目的地 origin 信任策略，并非 DNS/网络出口防火墙；需要时须独立限制诊断进程网络权限。
+
 ## 可选 MR 回写
 
 ```bash
