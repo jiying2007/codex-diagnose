@@ -8,7 +8,7 @@ Codex Diagnose Safe 是 Codex Safe Family 中专门负责 **CI / Build / Test �
 
 ## 产品契约
 
-`product-contract.json` 是 v1.5.7 的机器校验产品身份：
+`product-contract.json` 是唯一机器校验的当前产品身份：
 
 - Diagnose：**1.5.9**
 - Safe Core：精确提交 `d517dccf1e636f22fd7f9d938a5dd552a91420d3` / v4.18.13
