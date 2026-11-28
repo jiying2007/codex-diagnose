@@ -71,7 +71,27 @@ async function readBoundedResponse(response,maxBytes){
 class GitLabDiagnoseClient{
   constructor({baseUrl,token,timeoutMs=30000,maxPages=20,maxTraceBytes=8*1024*1024,maxArtifactBytes=4*1024*1024,artifactRedirectOrigins=[]}={}){this.baseUrl=normalizeBaseUrl(baseUrl);this.apiUrl=`${this.baseUrl}/api/v4`;this.token=String(token||'').trim();if(!this.token)throw apiError('GitLab token is required');this.timeoutMs=timeoutMs;this.maxPages=maxPages;this.maxTraceBytes=maxTraceBytes;this.maxArtifactBytes=maxArtifactBytes;if(!Array.isArray(artifactRedirectOrigins)||artifactRedirectOrigins.length>8)throw redirectError('At most eight exact artifact redirect origins may be configured');this.artifactRedirectOrigins=Object.freeze([...new Set(artifactRedirectOrigins.map(normalizeArtifactRedirectOrigin))]);}
   async request(method,pathname,{query,body,expected=[200],accept='json',maxBytes=4*1024*1024,allowExternalRedirect=false}={}){requireByteLimit(maxBytes);const url=new URL(this.apiUrl+pathname);for(const[k,v]of Object.entries(query||{}))if(v!==undefined&&v!==null&&v!=='')url.searchParams.set(k,String(v));let response;try{response=await fetchGitLab(url,{method,headers:{'PRIVATE-TOKEN':this.token,'User-Agent':'codex-diagnose-safe/1.0.0',...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(this.timeoutMs)},{allowExternalRedirect,artifactRedirectOrigins:this.artifactRedirectOrigins});}catch(cause){if(cause?.code==='EGITLABREDIRECT')throw cause;const e=apiError(`GitLab ${method} ${pathname} network failure`);e.code='EGITLABNETWORK';e.cause=cause;throw e;}const buffer=await readBoundedResponse(response,maxBytes),text=buffer.toString('utf8');if(!expected.includes(response.status))throw apiError(`GitLab ${method} ${pathname} failed with ${response.status}`,response.status,text);if(accept==='text')return{text,status:response.status,headers:response.headers};if(!text)return{data:null,status:response.status,headers:response.headers};try{return{data:JSON.parse(text),status:response.status,headers:response.headers};}catch(cause){const e=apiError(`GitLab ${method} ${pathname} returned invalid JSON`,response.status,text);e.code='EGITLABJSON';e.cause=cause;throw e;}}
-  async paginated(pathname,query={}){const items=[];for(let page=1;page<=this.maxPages;page++){const r=await this.request('GET',pathname,{query:{...query,per_page:100,page},maxBytes:8*1024*1024});if(!Array.isArray(r.data))throw apiError('GitLab paginated response is not an array');items.push(...r.data);const next=String(r.headers.get('x-next-page')||'').trim();if(!next)return{items,complete:true};const n=Number(next);if(!Number.isInteger(n)||n<=page)throw apiError('GitLab pagination cursor is invalid');}return{items,complete:false};}
+  async paginated(pathname,query={}){
+    const fail=message=>Object.assign(apiError(message),{code:'EGITLABPAGINATION'});
+    const limit=this.maxPages,perPage=100,items=[];
+    if(!Number.isSafeInteger(limit)||limit<1)throw fail('GitLab pagination page limit is invalid');
+    for(let page=1;page<=limit;page++){
+      const r=await this.request('GET',pathname,{query:{...query,per_page:perPage,page},maxBytes:8*1024*1024});
+      if(!Array.isArray(r.data)||r.data.length>perPage)throw fail('GitLab paginated response is not a bounded array');
+      const observed=r.headers.get('x-page');
+      if(observed!==null&&String(observed).trim()!==String(page))throw fail('GitLab pagination response does not identify the requested page');
+      items.push(...r.data);
+      const next=r.headers.get('x-next-page');
+      // A full page without pagination metadata is not proof of exhaustion.
+      if(next===null)return{items,complete:r.data.length<perPage};
+      const cursor=String(next).trim();
+      if(!cursor)return{items,complete:true};
+      // Offset pagination must be contiguous. Never silently ignore a jump,
+      // loop, or malformed cursor when callers rely on complete enumeration.
+      if(cursor!==String(page+1))throw fail('GitLab pagination cursor is not the next contiguous page');
+    }
+    return{items,complete:false};
+  }
   async getProject(project){return(await this.request('GET',`/projects/${projectPath(project)}`)).data;}
   async getPipeline(project,pipelineId){return(await this.request('GET',`/projects/${projectPath(project)}/pipelines/${pipelineId}`)).data;}
   async getJob(project,jobId){return(await this.request('GET',`/projects/${projectPath(project)}/jobs/${jobId}`)).data;}
