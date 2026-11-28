@@ -34,5 +34,8 @@ test('native GitLab runner failure bypasses the model only when every failed job
   assert.equal((await runDiagnosis(base({pipelineId:9,artifacts:[{kind:'junit',path:'report.xml'}]}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,4);
   trace='src/main.c:42: error: unknown type name X';
   assert.equal((await runDiagnosis(base({pipelineId:9}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,5);
+  assert.equal((await runDiagnosis(base({jobId:1}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,6);
+  trace='runner system failure\nassertion failed';
+  assert.equal((await runDiagnosis(base({pipelineId:9}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,7);
  }finally{if(old===undefined)delete process.env.TEST_DIAG_TOKEN;else process.env.TEST_DIAG_TOKEN=old;}
 });
