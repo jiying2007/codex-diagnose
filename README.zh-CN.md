@@ -98,7 +98,9 @@ Pipeline 模式会完整枚举受限 Job 集合，只选择失败 Job，将多�
 
 ## 失败因果排序
 
-Pipeline 模式会在唯一一次 Codex 调用前，依据 stage/started 顺序、Core 确定性失败分类和归一化首个错误 signature 对失败 Job 排序。只有 signature 精确重复的 Job 才标记为 cascade (`duplicateOf`) 并排在独立根因候选之后；当 GitLab API 没有证明完整 `needs` DAG 时不会自行猜测依赖关系，也不会静默丢弃任何失败 Job。
+Pipeline 模式会在至多一次 Codex 调用前，依据 stage/started 顺序、Core 确定性失败分类和归一化首个错误 signature 对失败 Job 排序。只有 signature 精确重复的 Job 才标记为 cascade (`duplicateOf`) 并排在独立根因候选之后；当 GitLab API 没有证明完整 `needs` DAG 时不会自行猜测依赖关系，也不会静默丢弃任何失败 Job。
+
+所有失败 Job 均绑定所选 Pipeline/Commit，且 GitLab API 明确返回 `runner_system_failure` 时，可直接输出保守的零模型基础设施诊断，不冒充已确定底层宿主根因。混合或未知原因、相矛盾的源码/测试证据、用户指定 Artifact 或模型均保留有界语义调用。
 
 ## CI Artifact 证据
 

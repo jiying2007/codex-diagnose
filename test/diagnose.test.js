@@ -5,3 +5,37 @@ test('deterministic local diagnosis redacts raw secrets and emits a receipt',asy
 test('diagnosis notifications localize display time without altering the UTC receipt',()=>{const previous=process.env.CODEX_SAFE_DISPLAY_TIME_ZONE;process.env.CODEX_SAFE_DISPLAY_TIME_ZONE='Asia/Shanghai';try{const text=compactText({classification:'source',rootCause:'failure',confidence:.9,retryRecommended:false},{subject:{jobName:'build'}},{createdAt:'2026-09-07T03:26:08.987Z'});assert.match(text,/Diagnosis time: 2026-09-07 11:26:08 UTC\+08:00/);assert.doesNotMatch(text,/Diagnosis time \(UTC\)/);assert.doesNotMatch(text,/2026-09-07T03:26:08\.987Z/);}finally{if(previous===undefined)delete process.env.CODEX_SAFE_DISPLAY_TIME_ZONE;else process.env.CODEX_SAFE_DISPLAY_TIME_ZONE=previous;}});
 test('pipeline aggregation performs one model diagnosis and can upsert one MR summary',async()=>{const old=process.env.TEST_DIAG_TOKEN;process.env.TEST_DIAG_TOKEN='token';let calls=0,published=0;const client={getPipeline:async()=>({id:9,sha:'0123456789abcdef0123456789abcdef01234567'}),listPipelineJobs:async()=>({complete:true,items:[{id:1,name:'compile',stage:'build',status:'failed'},{id:2,name:'tests',stage:'test',status:'failed'}]}),getTrace:async(_p,id)=>id===1?'src/a.c:9: error: unknown type name X':'FAIL expected 1 got 2',getArtifactText:async()=>null,changedPaths:async()=>['src/a.c','test/a.test.js'],mergeRequestsForCommit:async()=>[{iid:44,project_id:7,target_project_id:7,state:'opened'}],getMergeRequest:async()=>({iid:44,project_id:7,state:'opened',source_project_id:7,target_project_id:7,source_branch:'fix',target_branch:'main',diff_refs:{head_sha:'0123456789abcdef0123456789abcdef01234567',base_sha:'c'.repeat(40),start_sha:'d'.repeat(40)}}),upsertDiagnosisNote:async(_p,iid,body,{beforeWrite})=>{await beforeWrite();published++;assert.equal(iid,44);assert.match(body,/Codex Diagnose Safe/);}};const runCodexFn=async({evidence})=>{calls++;assert.match(evidence.log.text,/FAILED JOB 1/);assert.match(evidence.log.text,/FAILED JOB 2/);return{diagnosis:{classification:'source',rootCause:'The compile error in src/a.c is the primary failure; tests are downstream.',confidence:.96,primaryEvidence:['src/a.c:9'],relatedFailures:['tests'],affectedFiles:['src/a.c'],recommendedActions:['Fix the type declaration and rebuild before evaluating downstream tests.'],retryRecommended:false},model:'test-model',codexVersion:'test-cli',usage:{inputTokens:100,outputTokens:20},durationMs:5};};try{const result=await runDiagnosis(base({pipelineId:9,publish:true}),{client,runCodexFn});assert.equal(calls,1);assert.equal(published,1);assert.equal(result.publication.mrIid,44);assert.equal(result.receipt.classification,'source');assert.equal(result.evidence.failedJobs.length,2);}finally{if(old===undefined)delete process.env.TEST_DIAG_TOKEN;else process.env.TEST_DIAG_TOKEN=old;}});
 test('non-failed explicit jobs are rejected before model execution',async()=>{const old=process.env.TEST_DIAG_TOKEN;process.env.TEST_DIAG_TOKEN='token';const client={getJob:async()=>({id:3,status:'success'})};try{await assert.rejects(()=>runDiagnosis(base({jobId:3}),{client,runCodexFn:async()=>{throw new Error('must not run');}}),/only failed jobs/);}finally{if(old===undefined)delete process.env.TEST_DIAG_TOKEN;else process.env.TEST_DIAG_TOKEN=old;}});
+
+test('native GitLab runner failure bypasses the model only when every failed job and revision are bound',async()=>{
+ const old=process.env.TEST_DIAG_TOKEN;process.env.TEST_DIAG_TOKEN='fixture';
+ const sha='a'.repeat(40),make=(id,reason='runner_system_failure')=>({id,name:'build-'+id,stage:'build',status:'failed',failure_reason:reason,pipeline:{id:9,sha},commit:{id:sha}});
+ let rows=[make(1),make(2)],trace='runner system failure',calls=0;
+ const client={getPipeline:async()=>({id:9,sha}),listPipelineJobs:async()=>({complete:true,items:rows}),getJob:async()=>rows[0],getTrace:async()=>trace,getArtifactText:async()=>null,changedPaths:async()=>[]};
+ const runCodexFn=async()=>{calls++;return{diagnosis:{classification:'unknown',rootCause:'Needs semantic review',confidence:.5,primaryEvidence:[],relatedFailures:[],affectedFiles:[],recommendedActions:['Inspect logs.'],retryRecommended:false},model:'fixture-model',codexVersion:'fixture',usage:{inputTokens:10,outputTokens:5}};};
+ try{
+  const local=await runDiagnosis(base({pipelineId:9}),{client,runCodexFn});
+  assert.equal(calls,0);
+  assert.equal(local.execution.mode,'deterministic');
+  assert.equal(local.execution.model,'deterministic');
+  assert.equal(local.execution.inputManifest.promptBound,false);
+  assert.equal(local.execution.inputManifest.deliveredPromptDigest,null);
+  assert.equal(local.execution.modelRoutingContractVersion,null);
+  assert.equal(local.diagnosis.classification,'infra');
+  assert.match(local.diagnosis.rootCause,/underlying runner\/host failure is not established/);
+  assert.equal(local.diagnosis.affectedFiles.length,0);
+  const single=await runDiagnosis(base({jobId:1}),{client,runCodexFn});
+  assert.equal(single.execution.mode,'deterministic');assert.equal(calls,0);
+  rows=[make(1),make(2,'script_failure')];
+  assert.equal((await runDiagnosis(base({pipelineId:9}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,1);
+  rows=[make(1),{...make(2),pipeline:{id:10,sha}}];
+  assert.equal((await runDiagnosis(base({pipelineId:9}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,2);
+  rows=[make(1),make(2)];
+  assert.equal((await runDiagnosis(base({pipelineId:9,model:'requested-model'}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,3);
+  assert.equal((await runDiagnosis(base({pipelineId:9,artifacts:[{kind:'junit',path:'report.xml'}]}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,4);
+  trace='src/main.c:42: error: unknown type name X';
+  assert.equal((await runDiagnosis(base({pipelineId:9}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,5);
+  assert.equal((await runDiagnosis(base({jobId:1}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,6);
+  trace='runner system failure\nassertion failed';
+  assert.equal((await runDiagnosis(base({pipelineId:9}),{client,runCodexFn})).execution.mode,'codex');assert.equal(calls,7);
+ }finally{if(old===undefined)delete process.env.TEST_DIAG_TOKEN;else process.env.TEST_DIAG_TOKEN=old;}
+});

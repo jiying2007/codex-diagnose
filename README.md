@@ -195,7 +195,7 @@ changed-path / optional artifact metadata
 one structured Codex diagnosis
 ```
 
-This removes repetitive log noise before tokenization and prevents one model call per cascade-failed job. Exact percentage savings are workload-dependent and are not claimed without telemetry.
+This removes repetitive log noise before tokenization and prevents one model call per cascade-failed job. Exact percentage savings are workload-dependent and are not claimed without telemetry. When all failed jobs are bound to the selected GitLab pipeline/commit and the API reports `runner_system_failure` for every job, Diagnose can use a conservative zero-model infrastructure diagnosis (without claiming a deeper host root cause). Conflicting source/test evidence, requested artifacts, explicit model selection, and other or missing failure reasons retain the semantic path.
 
 ## Family boundary
 
