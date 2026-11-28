@@ -72,3 +72,47 @@ test('approved artifact origins do not grant cross-origin GitLab API or write ac
  await assert.rejects(client.request('POST','/notes',{body:{body:'x'}}),{code:'EGITLABREDIRECT'});
  assert.equal(reached,0);
 });
+
+test('advertised oversize responses cancel the body without reading it',async()=>{
+  const {readBoundedResponse}=require('../src/gitlab');
+  let cancelled=0,read=0;
+  const response={
+    status:200,headers:new Headers({'content-length':'1025'}),
+    body:{async cancel(){cancelled++;},getReader(){read++;throw new Error('must not read oversized body');}}
+  };
+  await assert.rejects(readBoundedResponse(response,1024),{code:'EGITLABSIZE',maxBytes:1024});
+  assert.equal(cancelled,1);
+  assert.equal(read,0);
+});
+test('stream overflow cancels and unlocks the reader; exact byte limit succeeds',async()=>{
+  const {readBoundedResponse}=require('../src/gitlab');
+  let cancelled=0;
+  const body=new ReadableStream({start(controller){controller.enqueue(new Uint8Array(4));controller.enqueue(new Uint8Array(5));},cancel(){cancelled++;}});
+  await assert.rejects(readBoundedResponse({status:200,headers:new Headers(),body},8),{code:'EGITLABSIZE',maxBytes:8});
+  assert.equal(cancelled,1);
+  assert.equal(body.locked,false);
+  assert.deepEqual(await readBoundedResponse(new Response('abcd'),4),Buffer.from('abcd'));
+  assert.deepEqual(await readBoundedResponse(new Response(null),0),Buffer.alloc(0));
+});
+test('unstreamable body cannot fall back to unbounded allocation',async()=>{
+  const {readBoundedResponse}=require('../src/gitlab');
+  let buffered=0;
+  await assert.rejects(readBoundedResponse({status:200,headers:new Headers(),arrayBuffer:async()=>{buffered++;return new ArrayBuffer(1024);}},8),{code:'EGITLABBODY'});
+  assert.equal(buffered,0);
+});
+test('invalid response limits fail before contacting GitLab',async t=>{
+  let reached=0;
+  const origin=await server((_req,res)=>{reached++;res.end('unexpected');},t);
+  const client=new GitLabDiagnoseClient({baseUrl:origin,token:'synthetic-token'});
+  for(const maxBytes of [NaN,Infinity,-1,1.5,'8',Number.MAX_SAFE_INTEGER+1]){
+    await assert.rejects(client.getArtifactText('p',1,'a',maxBytes),{code:'EGITLABLIMIT'});
+  }
+  assert.equal(reached,0);
+});
+test('approved origin streaming artifacts enforce the same exact byte budget',async t=>{
+  const target=await server((_req,res)=>{res.write('abcd');res.end('efgh');},t);
+  const origin=await server((_req,res)=>{res.writeHead(302,{location:target+'/signed'});res.end();},t);
+  const client=new GitLabDiagnoseClient({baseUrl:origin,token:'synthetic-token',artifactRedirectOrigins:[target]});
+  assert.equal(await client.getArtifactText('p',1,'a',8),'abcdefgh');
+  await assert.rejects(client.getArtifactText('p',1,'a',7),{code:'EGITLABSIZE',maxBytes:7});
+});
